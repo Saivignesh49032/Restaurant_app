@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-utensils"></i> Find Your Next Meal</h1>
+            <nav>
+                <a href="/" class="active"><i class="fas fa-home"></i> Home</a>
+                <a href="/map"><i class="fas fa-map-marker-alt"></i> View Map</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="layout-grid">
+        <section class="preferences-section">
+            <div class="form-container">
+                <h2><i class="fas fa-sliders-h"></i> Your Preferences</h2>
+                <form id="reco-form">
+                    <div class="form-group">
+                        <label for="city"><i class="fas fa-city"></i> City:</label>
+                        <div class="autocomplete-wrapper">
+                            <input type="text" id="city" placeholder="Type to search cities..." required>
+                            <input type="hidden" id="city-hidden" name="city" required>
+                            <div class="autocomplete-list" id="city-list"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cuisines"><i class="fas fa-hamburger"></i> Cuisines:</label>
+                        <div class="autocomplete-wrapper">
+                            <div class="selected-items" id="selected-cuisines"></div>
+                            <div class="input-wrapper">
+                                <input type="text" id="cuisines-input" placeholder="Type to search cuisines...">
+                                <input type="hidden" id="cuisines" name="cuisines" required>
+                            </div>
+                            <div class="autocomplete-list" id="cuisines-list"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="priceRange"><i class="fas fa-rupee-sign"></i> Price Range:</label>
+                        <select id="priceRange" name="priceRange">
+                            <option value="1">1 (Cheap)</option>
+                            <option value="2" selected>2 (Moderate)</option>
+                            <option value="3">3 (Expensive)</option>
+                            <option value="4">4 (Very Expensive)</option>
+                        </select>
+                    </div>
+                    <div class="form-group-radio">
+                        <label><i class="fas fa-truck"></i> Visit or Delivery?</label>
+                        <div class="radio-options">
+                            <input type="radio" id="visit" name="visitType" value="visit" checked>
+                            <label for="visit"><i class="fas fa-walking"></i> Visit</label>
+                            <input type="radio" id="delivery" name="visitType" value="delivery">
+                            <label for="delivery"><i class="fas fa-motorcycle"></i> Delivery</label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="table-booking-group">
+                        <label for="tableBooking"><i class="fas fa-chair"></i> Need Table Booking?</label>
+                        <select id="tableBooking" name="tableBooking">
+                            <option value="No" selected>No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-search"></i> Find Restaurants
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <section class="results-section">
+            <div class="results-container">
+                <h2><i class="fas fa-star"></i> Recommendations</h2>
+                <div class="results-actions">
+                    <button id="view-all-map" class="action-btn hidden">
+                        <i class="fas fa-map-marked-alt"></i> View All on Map
+                    </button>
+                    <div class="sort-controls">
+                        <label for="sort-by">Sort by:</label>
+                        <select id="sort-by">
+                            <option value="rating">Rating</option>
+                            <option value="cost">Cost</option>
+                            <option value="similarity">Similarity</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="results-list" class="results-grid">
+                    <p class="no-results">Your top 10 recommendations will appear here...</p>
+                </div>
+            </div>
+
+            <div id="preview-map" class="map-preview hidden">
+                <h3>Quick Location Preview</h3>
+                <div class="map-container"></div>
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
