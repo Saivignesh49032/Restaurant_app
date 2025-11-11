@@ -23,9 +23,15 @@ ASSETS_DIR = 'assets'
 DATASET_PATH = os.path.join(ASSETS_DIR, 'Dataset .csv')
 original_restaurant_data = pd.read_csv(DATASET_PATH)
 
-# Load CIT1 Rating Model
+# Load CIT1 Rating Model and Preprocessors
 RATING_MODEL_PATH = os.path.join(ASSETS_DIR, 'rating_model.joblib')
 rating_model = joblib.load(RATING_MODEL_PATH)
+
+RATING_PREPROCESSOR_PATH = os.path.join(ASSETS_DIR, 'rating_preprocessor.joblib')
+rating_preprocessor = joblib.load(RATING_PREPROCESSOR_PATH)
+
+TARGET_SCALER_PATH = os.path.join(ASSETS_DIR, 'target_scaler.joblib')
+target_scaler = joblib.load(TARGET_SCALER_PATH)
 
 # Load CIT2 Recommender Assets
 PREPROCESSOR_PATH = os.path.join(ASSETS_DIR, 'recommender_preprocessor.joblib')
@@ -36,6 +42,12 @@ recommender_preprocessor = joblib.load(PREPROCESSOR_PATH)
 mlb_classes = joblib.load(MLB_CLASSES_PATH)
 processed_restaurants_df = pd.read_csv(VECTORS_PATH, index_col=0)
 all_features_for_recommender_pipeline = processed_restaurants_df.columns.tolist()
+
+# Cache numpy matrix for similarity computations to speed up recommendations
+try:
+    processed_restaurants_matrix = processed_restaurants_df.values
+except Exception:
+    processed_restaurants_matrix = np.asarray(processed_restaurants_df)
 
 # Price range mapping
 price_range_map = {1: 'Cheap', 2: 'Moderate', 3: 'Expensive', 4: 'Very Expensive'}
@@ -144,12 +156,33 @@ def recommend_restaurants(user_preferences, processed_restaurants_df, original_r
     """
     user_vector = create_user_preference_vector(user_preferences, recommendation_preprocessor, mlb_cuisines_classes, all_features_for_recommender_pipeline)
     
-    similarities = cosine_similarity(user_vector, processed_restaurants_df)
+    # Ensure processed_restaurants_df is an array for fast similarity computation
+    # Prefer the cached matrix if available (faster)
+    if 'processed_restaurants_matrix' in globals():
+        processed_matrix = processed_restaurants_matrix
+    else:
+        try:
+            processed_matrix = processed_restaurants_df.values if hasattr(processed_restaurants_df, 'values') else np.asarray(processed_restaurants_df)
+        except Exception:
+            processed_matrix = np.asarray(processed_restaurants_df)
+
+    similarities = cosine_similarity(user_vector, processed_matrix)
     similarity_scores = similarities.flatten()
 
-    # Work on a copy of the original data and ensure numeric fields are numeric
+    # Create a Series of similarity scores indexed by the processed_restaurants_df index (safe alignment)
+    try:
+        sim_index = processed_restaurants_df.index
+    except Exception:
+        sim_index = np.arange(len(similarity_scores))
+
+    sim_series = pd.Series(similarity_scores, index=sim_index, name='Similarity Score')
+
+    # Work on a copy of the original data; join similarity scores by index so lengths don't have to match
     recommendations_df = original_restaurant_data.copy()
-    recommendations_df['Similarity Score'] = similarity_scores
+    # Join will align by index; restaurants not present in processed vectors will get NaN similarities
+    recommendations_df = recommendations_df.join(sim_series, how='left')
+    # Fill NaN similarities with 0
+    recommendations_df['Similarity Score'] = pd.to_numeric(recommendations_df['Similarity Score'], errors='coerce').fillna(0)
 
     # Ensure 'Aggregate rating' is numeric so comparisons/sorting won't fail if mixed types exist
     if 'Aggregate rating' in recommendations_df.columns:
@@ -242,21 +275,52 @@ def map_page():
     if 'recommendations' in session:
         # Show only recommended restaurants
         recommendations = pd.DataFrame(session['recommendations'])
-        restaurants_to_show = recommendations
-        map_title = f"Top {len(recommendations)} Recommended Restaurants"
+        if not recommendations.empty:
+            if 'Restaurant ID' in recommendations.columns:
+                coord_cols = ['Latitude', 'Longitude']
+                missing_coords = any(
+                    (col not in recommendations.columns) or recommendations[col].isnull().all()
+                    for col in coord_cols
+                )
+                if missing_coords:
+                    coord_source = original_restaurant_data[['Restaurant ID', 'Latitude', 'Longitude']]
+                    recommendations = recommendations.drop(columns=[col for col in coord_cols if col in recommendations.columns], errors='ignore')
+                    recommendations = recommendations.merge(coord_source, on='Restaurant ID', how='left')
+            restaurants_to_show = recommendations
+            map_title = f"Top {len(recommendations)} Recommended Restaurants"
     
     # Check if we're highlighting a specific restaurant
     restaurant_id = request.args.get('highlight')
-    if restaurant_id and restaurants_to_show is not None:
-        highlight_restaurant = restaurants_to_show[restaurants_to_show['Restaurant ID'] == int(restaurant_id)].iloc[0] if not restaurants_to_show.empty else None
-        if highlight_restaurant is not None:
-            map_title = f"Location: {highlight_restaurant['Restaurant Name']}"
+    if restaurant_id and restaurants_to_show is not None and not restaurants_to_show.empty:
+        if 'Restaurant ID' in restaurants_to_show.columns:
+            rest_ids = pd.to_numeric(restaurants_to_show['Restaurant ID'], errors='coerce')
+            highlight_rows = restaurants_to_show[rest_ids == int(restaurant_id)]
+            highlight_restaurant = highlight_rows.iloc[0] if not highlight_rows.empty else None
+            if highlight_restaurant is not None:
+                map_title = f"Location: {highlight_restaurant['Restaurant Name']}"
     
     # If no recommendations, show a sample
-    if restaurants_to_show is None:
+    def needs_fallback(df):
+        if df is None or df.empty:
+            return True
+        required_cols = {'Latitude', 'Longitude'}
+        if not required_cols.issubset(df.columns):
+            return True
+        # Ensure there is at least one non-null coord
+        return df[list(required_cols)].dropna(how='any').empty
+
+    if needs_fallback(restaurants_to_show):
         MAX_MARKERS = 800
         sample_count = min(int(len(original_restaurant_data) * 0.2), MAX_MARKERS)
         restaurants_to_show = original_restaurant_data.sample(n=sample_count, random_state=42)
+        highlight_restaurant = None
+        map_title = "All Restaurants Sample (20%)"
+
+    # Normalize delivery/booking flags to 0/1 for consistent display
+    if 'Has Online delivery' in restaurants_to_show.columns:
+        restaurants_to_show['Has Online delivery'] = _to_binary_yes_no_series(restaurants_to_show['Has Online delivery'])
+    if 'Has Table booking' in restaurants_to_show.columns:
+        restaurants_to_show['Has Table booking'] = _to_binary_yes_no_series(restaurants_to_show['Has Table booking'])
 
     # Initialize map (centered on a default location) with canvas rendering enabled for smoother panning
     # If highlighting a restaurant, center on its location
@@ -353,6 +417,49 @@ def api_recommend():
         
     except Exception as e:
         print(f"Error processing request: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/predict_rating', methods=['POST'])
+def api_predict_rating():
+    """API endpoint to predict a restaurant's rating."""
+    try:
+        data = request.json
+        print(f"Rating prediction data received: {data}")
+
+        # Convert the single JSON object into a DataFrame
+        new_data_df = pd.DataFrame([data])
+
+        try:
+            # Transform features using the complete pipeline
+            new_data_transformed = rating_preprocessor.transform(new_data_df)
+            
+            # Get scaled prediction
+            scaled_prediction = rating_model.predict(new_data_transformed)
+            
+            # Unscale the prediction
+            prediction = target_scaler.inverse_transform(scaled_prediction.reshape(-1, 1))
+            
+            # Get the prediction value and ensure it's within reasonable bounds
+            predicted_rating = float(prediction[0][0])
+            predicted_rating = max(0, min(5, predicted_rating))  # Clamp between 0 and 5
+            
+            # Round to 1 decimal place for consistency with actual ratings
+            predicted_rating = round(predicted_rating, 1)
+            
+            # Add confidence level based on prediction range
+            confidence = "high" if 2.0 <= predicted_rating <= 4.9 else "low"
+            
+            return jsonify({
+                'predicted_rating': predicted_rating,
+                'confidence': confidence
+            })
+            
+        except Exception as e:
+            print(f"Error in prediction pipeline: {str(e)}")
+            return jsonify({"error": "Failed to generate prediction"}), 500
+
+    except Exception as e:
+        print(f"Error processing rating prediction: {e}")
         return jsonify({"error": str(e)}), 500
 
 # --- Run the App ---

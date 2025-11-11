@@ -6,6 +6,7 @@
     <title>Restaurant Recommender</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 </head>
 <body>
     <header>
@@ -33,13 +34,21 @@
                     </div>
                     <div class="form-group">
                         <label for="cuisines"><i class="fas fa-hamburger"></i> Cuisines:</label>
-                        <div class="autocomplete-wrapper">
+                        <div class="dropdown-wrapper">
                             <div class="selected-items" id="selected-cuisines"></div>
-                            <div class="input-wrapper">
-                                <input type="text" id="cuisines-input" placeholder="Type to search cuisines...">
-                                <input type="hidden" id="cuisines" name="cuisines" required>
+                            <button type="button" class="dropdown-toggle" id="cuisines-dropdown-toggle" disabled>
+                                <span class="dropdown-placeholder">Select a city first...</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <input type="hidden" id="cuisines" name="cuisines" required>
+                            <div class="dropdown-menu" id="cuisines-dropdown">
+                                <div class="dropdown-search">
+                                    <input type="text" id="cuisines-search" placeholder="Search cuisines...">
+                                </div>
+                                <div class="dropdown-items" id="cuisines-items">
+                                    <p class="dropdown-empty">Select a city to see available cuisines</p>
+                                </div>
                             </div>
-                            <div class="autocomplete-list" id="cuisines-list"></div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -96,12 +105,21 @@
             </div>
 
             <div id="preview-map" class="map-preview hidden">
-                <h3>Quick Location Preview</h3>
+                <h3><i class="fas fa-map-marker-alt"></i> Quick Location Preview</h3>
                 <div class="map-container"></div>
+                <div class="map-actions">
+                    <button class="map-action-btn" id="view-in-map">
+                        <i class="fas fa-expand"></i> View Full Map
+                    </button>
+                    <button class="map-action-btn" id="get-directions">
+                        <i class="fas fa-directions"></i> Get Directions
+                    </button>
+                </div>
             </div>
         </section>
     </main>
 
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

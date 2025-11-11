@@ -3,28 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Restaurant Map</title>
+    <title>Restaurant Map - {{ map_title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 </head>
 <body class="map-page">
     <header>
         <div class="header-content">
-            <h1><i class="fas fa-map-marked-alt"></i> {{ map_title }}</h1>
+            <h1>
+                <i class="fas fa-map-marked-alt"></i> 
+                <span id="map-title">{{ map_title }}</span>
+            </h1>
             <nav>
-                <a href="/" class="nav-btn"><i class="fas fa-arrow-left"></i> Back to Search</a>
-                <a href="/map" class="nav-btn"><i class="fas fa-globe"></i> Full Map</a>
+                <a href="/" class="nav-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Search
+                </a>
+                <a href="/map" class="nav-btn" id="reset-map">
+                    <i class="fas fa-globe"></i> Show All
+                </a>
             </nav>
         </div>
     </header>
 
     <main class="map-layout">
         <div class="map-controls">
-            <button id="center-map" class="control-btn">
-                <i class="fas fa-crosshairs"></i> Center Map
+            <button id="center-map" class="control-btn" title="Center Map">
+                <i class="fas fa-crosshairs"></i>
             </button>
-            <button id="cluster-toggle" class="control-btn">
-                <i class="fas fa-layer-group"></i> Toggle Clustering
+            <button id="cluster-toggle" class="control-btn" title="Toggle Clustering">
+                <i class="fas fa-layer-group"></i>
+            </button>
+            <button id="toggle-info" class="control-btn" title="Toggle Info Panel">
+                <i class="fas fa-info-circle"></i>
             </button>
         </div>
         
@@ -37,29 +50,8 @@
         </div>
     </main>
 
-    <script>
-        // Add map control handlers
-        document.getElementById('center-map').addEventListener('click', () => {
-            // The map object is available as 'map' in the embedded Folium HTML
-            try {
-                const bounds = map.getBounds();
-                map.fitBounds(bounds);
-            } catch (e) {
-                console.error('Error centering map:', e);
-            }
-        });
-
-        document.getElementById('cluster-toggle').addEventListener('click', function() {
-            try {
-                const clusters = document.querySelectorAll('.marker-cluster');
-                clusters.forEach(cluster => {
-                    cluster.style.display = cluster.style.display === 'none' ? '' : 'none';
-                });
-                this.classList.toggle('active');
-            } catch (e) {
-                console.error('Error toggling clusters:', e);
-            }
-        });
-    </script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
 </body>
 </html>

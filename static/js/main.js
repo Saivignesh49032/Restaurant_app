@@ -14,13 +14,21 @@ class Autocomplete {
         this.filteredItems = [];
         this.selectedIndex = -1;
         this.selectedValues = new Set();
+        this.autoFetch = options.autoFetch !== false;
+        this.isDisabled = options.disabled || false;
 
         this.init();
     }
 
     async init() {
         try {
-            await this.fetchItems();
+            if (this.isDisabled) {
+                this.toggleDisabledState(true);
+            }
+
+            if (this.autoFetch) {
+                await this.fetchItems();
+            }
             
             this.input.addEventListener('input', () => this.onInput());
             this.input.addEventListener('keydown', (e) => this.onKeydown(e));
@@ -41,6 +49,8 @@ class Autocomplete {
             if (value) url.searchParams.append(key, value);
         });
 
+        const shouldRemainDisabled = this.isDisabled;
+
         // Add loading state if this is the cuisine input
         if (this.input.id === 'cuisines-input') {
             this.wrapper.classList.add('loading');
@@ -56,10 +66,14 @@ class Autocomplete {
         // Remove loading state if this is the cuisine input
         if (this.input.id === 'cuisines-input') {
             this.wrapper.classList.remove('loading');
-            this.input.disabled = false;
-            this.input.placeholder = this.urlParams.city 
-                ? `Search cuisines in ${this.urlParams.city}...`
-                : 'Type to search cuisines...';
+            this.input.disabled = shouldRemainDisabled;
+            if (!shouldRemainDisabled) {
+                this.input.placeholder = this.urlParams.city 
+                    ? `Search cuisines in ${this.urlParams.city}...`
+                    : 'Type to search cuisines...';
+            } else {
+                this.input.placeholder = 'Select a city first...';
+            }
         }
 
         return this.items;
@@ -68,17 +82,12 @@ class Autocomplete {
     updateUrlParams(params) {
         this.urlParams = { ...this.urlParams, ...params };
         // Clear existing selections when parameters change
-        this.selectedValues.clear();
-        if (this.selectedItems) {
-            this.selectedItems.innerHTML = '';
-        }
-        if (this.hiddenInput) {
-            this.hiddenInput.value = '';
-        }
-        this.fetchItems();
+        this.resetSelections();
+        return this.fetchItems();
     }
 
     onInput() {
+        if (this.isDisabled) return;
         const value = this.input.value.toLowerCase().trim();
         this.filteredItems = this.items.filter(item => {
             return !this.selectedValues.has(item) && 
@@ -221,36 +230,286 @@ class Autocomplete {
             this.selectItem(item.dataset.value);
         }
     }
+
+    toggleDisabledState(disabled) {
+        this.isDisabled = disabled;
+        if (this.wrapper) {
+            this.wrapper.classList.toggle('input-disabled', disabled);
+        }
+        if (this.input) {
+            this.input.disabled = disabled;
+            if (disabled) {
+                this.input.value = '';
+                if (this.listContainer) {
+                    this.listContainer.classList.remove('active');
+                }
+                if (this.input.id === 'cuisines-input') {
+                    this.input.placeholder = 'Select a city first...';
+                }
+            } else if (this.input.id === 'cuisines-input') {
+                this.input.placeholder = this.urlParams.city
+                    ? `Search cuisines in ${this.urlParams.city}...`
+                    : 'Type to search cuisines...';
+            }
+        }
+    }
+
+    setDisabled(disabled) {
+        this.toggleDisabledState(disabled);
+        if (disabled) {
+            this.clearData();
+            this.resetSelections();
+        }
+    }
+
+    resetSelections() {
+        this.selectedValues.clear();
+        if (this.selectedItems) {
+            this.selectedItems.innerHTML = '';
+        }
+        if (this.hiddenInput) {
+            this.hiddenInput.value = '';
+        }
+    }
+
+    clearData() {
+        this.items = [];
+        this.filteredItems = [];
+        this.selectedIndex = -1;
+        if (this.listContainer) {
+            this.listContainer.innerHTML = '';
+            this.listContainer.classList.remove('active');
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    let cuisineAutocomplete;
+    // Cuisine Dropdown Handler
+    const cuisineDropdown = {
+        toggle: document.getElementById('cuisines-dropdown-toggle'),
+        menu: document.getElementById('cuisines-dropdown'),
+        items: document.getElementById('cuisines-items'),
+        search: document.getElementById('cuisines-search'),
+        selectedItems: document.getElementById('selected-cuisines'),
+        hiddenInput: document.getElementById('cuisines'),
+        placeholder: document.querySelector('#cuisines-dropdown-toggle .dropdown-placeholder'),
+        allCuisines: [],
+        filteredCuisines: [],
+        selectedValues: new Set(),
+        currentCity: null,
+
+        init() {
+            if (!this.toggle || !this.menu) return;
+
+            // Toggle dropdown
+            this.toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!this.toggle.disabled) {
+                    this.toggle.classList.toggle('active');
+                    this.menu.classList.toggle('active');
+                    if (this.menu.classList.contains('active') && this.search) {
+                        this.search.focus();
+                    }
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!this.menu.contains(e.target) && !this.toggle.contains(e.target)) {
+                    this.close();
+                }
+            });
+
+            // Search filter
+            if (this.search) {
+                this.search.addEventListener('input', () => {
+                    this.filterCuisines();
+                });
+            }
+
+            // Prevent dropdown from closing when clicking inside
+            this.menu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        },
+
+        async loadCuisines(city) {
+            if (!city) return;
+
+            this.currentCity = city;
+            this.toggle.disabled = false;
+            if (this.placeholder) {
+                this.placeholder.textContent = `Select cuisines in ${city}...`;
+            }
+
+            // Clear search
+            if (this.search) {
+                this.search.value = '';
+            }
+
+            try {
+                const response = await fetch(`/api/cuisines?city=${encodeURIComponent(city)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                this.allCuisines = await response.json();
+                this.filteredCuisines = [...this.allCuisines];
+                this.renderItems();
+            } catch (error) {
+                console.error('Error loading cuisines:', error);
+                if (this.items) {
+                    this.items.innerHTML = '<p class="dropdown-empty">Error loading cuisines</p>';
+                }
+            }
+        },
+
+        filterCuisines() {
+            const searchValue = this.search.value.toLowerCase().trim();
+            this.filteredCuisines = this.allCuisines.filter(cuisine => {
+                const matchesSearch = !searchValue || cuisine.toLowerCase().includes(searchValue);
+                return matchesSearch;
+            });
+            this.renderItems();
+        },
+
+        renderItems() {
+            if (!this.items) return;
+
+            if (this.filteredCuisines.length === 0) {
+                this.items.innerHTML = '<p class="dropdown-empty">No cuisines found</p>';
+                return;
+            }
+
+            this.items.innerHTML = '';
+            this.filteredCuisines.forEach(cuisine => {
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+                const isSelected = this.selectedValues.has(cuisine);
+                const safeId = cuisine.replace(/[^a-zA-Z0-9]/g, '-');
+                item.innerHTML = `
+                    <input type="checkbox" id="cuisine-${safeId}" ${isSelected ? 'checked' : ''}>
+                    <label for="cuisine-${safeId}">${cuisine}</label>
+                `;
+                
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.addEventListener('change', () => {
+                        this.toggleCuisine(cuisine);
+                    });
+                }
+
+                this.items.appendChild(item);
+            });
+        },
+
+        toggleCuisine(cuisine) {
+            if (this.selectedValues.has(cuisine)) {
+                this.selectedValues.delete(cuisine);
+                this.removeTag(cuisine);
+            } else {
+                this.selectedValues.add(cuisine);
+                this.addTag(cuisine);
+            }
+            this.updateHiddenInput();
+            this.renderItems(); // Re-render to update checkboxes
+        },
+
+        addTag(cuisine) {
+            if (!this.selectedItems) return;
+
+            const tag = document.createElement('div');
+            tag.className = 'selected-tag';
+            tag.innerHTML = `
+                ${cuisine}
+                <span class="remove" data-value="${cuisine}">&times;</span>
+            `;
+
+            tag.querySelector('.remove').addEventListener('click', () => {
+                this.removeTag(cuisine);
+            });
+
+            this.selectedItems.appendChild(tag);
+        },
+
+        removeTag(cuisine) {
+            this.selectedValues.delete(cuisine);
+            const tag = this.selectedItems.querySelector(`[data-value="${cuisine}"]`);
+            if (tag) {
+                tag.parentElement.remove();
+            }
+            this.updateHiddenInput();
+            this.renderItems(); // Re-render to update checkboxes
+        },
+
+        updateHiddenInput() {
+            if (this.hiddenInput) {
+                this.hiddenInput.value = Array.from(this.selectedValues).join(',');
+            }
+        },
+
+        reset() {
+            this.selectedValues.clear();
+            if (this.selectedItems) {
+                this.selectedItems.innerHTML = '';
+            }
+            if (this.hiddenInput) {
+                this.hiddenInput.value = '';
+            }
+            if (this.search) {
+                this.search.value = '';
+            }
+            this.allCuisines = [];
+            this.filteredCuisines = [];
+            this.currentCity = null;
+            if (this.toggle) {
+                this.toggle.disabled = true;
+            }
+            if (this.placeholder) {
+                this.placeholder.textContent = 'Select a city first...';
+            }
+            if (this.items) {
+                this.items.innerHTML = '<p class="dropdown-empty">Select a city to see available cuisines</p>';
+            }
+            this.close();
+        },
+
+        close() {
+            if (this.toggle) {
+                this.toggle.classList.remove('active');
+            }
+            if (this.menu) {
+                this.menu.classList.remove('active');
+            }
+        }
+    };
+
+    cuisineDropdown.init();
 
     // Initialize autocomplete for city input
     const cityInput = document.getElementById('city');
     if (cityInput) {
+        const cityHiddenInput = document.getElementById('city-hidden');
         new Autocomplete(cityInput, {
             dataUrl: '/api/cities',
-            hiddenInput: document.getElementById('city-hidden'),
+            hiddenInput: cityHiddenInput,
             listContainer: document.getElementById('city-list'),
             onSelect: (city) => {
-                // Update cuisine options when city changes
-                if (cuisineAutocomplete) {
-                    cuisineAutocomplete.updateUrlParams({ city });
-                }
+                // Load cuisines for selected city
+                cuisineDropdown.loadCuisines(city);
             }
         });
-    }
 
-    // Initialize autocomplete for cuisines
-    const cuisinesInput = document.getElementById('cuisines-input');
-    if (cuisinesInput) {
-        cuisineAutocomplete = new Autocomplete(cuisinesInput, {
-            dataUrl: '/api/cuisines',
-            isMulti: true,
-            selectedItems: document.getElementById('selected-cuisines'),
-            hiddenInput: document.getElementById('cuisines'),
-            listContainer: document.getElementById('cuisines-list')
+        cityInput.addEventListener('input', () => {
+            const typedValue = cityInput.value.trim();
+            if (!typedValue) {
+                if (cityHiddenInput) {
+                    cityHiddenInput.value = '';
+                }
+                cuisineDropdown.reset();
+            } else if (cityHiddenInput && cityHiddenInput.value !== typedValue) {
+                cityHiddenInput.value = '';
+                cuisineDropdown.reset();
+            }
         });
     }
 
@@ -391,6 +650,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const similarity = (parseFloat(r['Similarity Score']) * 100).toFixed(1);
             const delivery = r['Has Online delivery'] === 1;
             const booking = r['Has Table booking'] === 1;
+            const latitude = r['Latitude'];
+            const longitude = r['Longitude'];
+            const hasCoordinates = latitude !== undefined && latitude !== null && latitude !== '' &&
+                longitude !== undefined && longitude !== null && longitude !== '';
+            const directionsUrl = hasCoordinates
+                ? `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+                : null;
 
             card.innerHTML = `
                 <div class="card-header">
@@ -420,6 +686,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="view-map-btn" onclick="window.location.href='/map?highlight=${r['Restaurant ID']}'">
                         <i class="fas fa-map-marker-alt"></i> View on Map
                     </button>
+                    ${directionsUrl ? `
+                        <button class="directions-btn" onclick="window.open('${directionsUrl}', '_blank')">
+                            <i class="fas fa-route"></i> Directions
+                        </button>` : ''}
                 </div>
             `;
             resultsList.appendChild(card);
@@ -436,15 +706,60 @@ document.addEventListener('DOMContentLoaded', () => {
         const previewMap = document.getElementById('preview-map');
         if (previewMap) {
             previewMap.classList.remove('hidden');
-            // Here you could initialize a small Leaflet map showing just this restaurant
-            // For now, we'll just show the coordinates
+            
+            // Update action buttons
+            const viewInMapBtn = document.getElementById('view-in-map');
+            const getDirectionsBtn = document.getElementById('get-directions');
+            
+            viewInMapBtn.onclick = () => {
+                window.location.href = `/map?highlight=${restaurant['Restaurant ID']}`;
+            };
+            
+            getDirectionsBtn.onclick = () => {
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${restaurant['Latitude']},${restaurant['Longitude']}`;
+                window.open(url, '_blank');
+            };
             const mapContainer = previewMap.querySelector('.map-container');
-            mapContainer.innerHTML = `
-                <div class="preview-content">
-                    <h4>${restaurant['Restaurant Name']}</h4>
-                    <p><i class="fas fa-map-pin"></i> Location Preview</p>
-                </div>
-            `;
+
+            // Clear previous map if exists
+            mapContainer.innerHTML = '';
+
+            // Initialize Leaflet map
+            const map = L.map(mapContainer, {
+                zoomControl: false,  // Disable zoom controls for preview
+                dragging: false,     // Disable dragging for preview
+                touchZoom: false,
+                scrollWheelZoom: false
+            }).setView([restaurant['Latitude'], restaurant['Longitude']], 15);
+
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add marker with custom popup
+            const marker = L.marker([restaurant['Latitude'], restaurant['Longitude']])
+                .addTo(map)
+                .bindPopup(`
+                    <div class="preview-popup">
+                        <h4>${restaurant['Restaurant Name']}</h4>
+                        <p class="rating">
+                            <i class="fas fa-star"></i> ${restaurant['Aggregate rating']}
+                        </p>
+                        <p class="cuisines">
+                            <i class="fas fa-utensils"></i> ${restaurant['Cuisines']}
+                        </p>
+                        <p class="cost">
+                            <i class="fas fa-rupee-sign"></i> ${restaurant['Average Cost for two']} for two
+                        </p>
+                    </div>
+                `, {
+                    closeButton: false,
+                    className: 'preview-popup'
+                });
+            
+            // Auto-open the popup
+            marker.openPopup();
         }
     }
 

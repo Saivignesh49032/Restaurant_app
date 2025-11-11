@@ -160,6 +160,11 @@ label {
     position: relative;
 }
 
+.autocomplete-wrapper.input-disabled input {
+    background: var(--background);
+    cursor: not-allowed;
+}
+
 .autocomplete-wrapper.loading::after {
     content: '';
     position: absolute;
@@ -268,13 +273,137 @@ label {
     position: relative;
 }
 
-#cuisines-input {
+/* Dropdown Styles */
+.dropdown-wrapper {
+    position: relative;
+}
+
+.dropdown-toggle {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid var(--border);
     border-radius: var(--radius-sm);
     font-size: 1rem;
-    transition: border-color 0.2s;
+    background: var(--white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all var(--transition-normal);
+    text-align: left;
+}
+
+.dropdown-toggle:hover:not(:disabled) {
+    border-color: var(--primary-light);
+    box-shadow: var(--shadow-sm);
+}
+
+.dropdown-toggle:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+}
+
+.dropdown-toggle:disabled {
+    background: var(--background);
+    cursor: not-allowed;
+    color: var(--text-light);
+}
+
+.dropdown-placeholder {
+    color: var(--text-light);
+}
+
+.dropdown-toggle.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+}
+
+.dropdown-toggle.active .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.dropdown-toggle .fa-chevron-down {
+    transition: transform var(--transition-normal);
+    color: var(--text-light);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    display: none;
+    max-height: 300px;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+.dropdown-menu.active {
+    display: flex;
+}
+
+.dropdown-search {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.dropdown-search input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.dropdown-items {
+    overflow-y: auto;
+    max-height: 250px;
+}
+
+.dropdown-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: background-color var(--transition-fast);
+    border-bottom: 1px solid var(--background);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background: var(--background);
+}
+
+.dropdown-item input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.dropdown-item label {
+    margin: 0;
+    cursor: pointer;
+    flex: 1;
+    font-weight: normal;
+}
+
+.dropdown-empty {
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--text-light);
+    margin: 0;
+    font-style: italic;
 }
 
 input[type="text"],
@@ -544,6 +673,7 @@ select:focus {
     border-top: 1px solid var(--border);
     display: flex;
     justify-content: flex-end;
+    gap: 0.5rem;
 }
 
 .view-map-btn {
@@ -565,18 +695,123 @@ select:focus {
     color: var(--white);
 }
 
+.directions-btn {
+    background: none;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.directions-btn:hover {
+    background: var(--accent);
+    color: var(--white);
+}
+
 /* Map Preview */
 .map-preview {
     background: var(--white);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
     margin-top: 1rem;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all var(--transition-normal);
+    position: sticky;
+    top: 5rem;
+}
+
+.map-preview.hidden {
+    display: none;
+}
+
+.map-preview:not(.hidden) {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .map-preview h3 {
     padding: 1rem;
     margin: 0;
     border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.map-container {
+    height: 300px;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    overflow: hidden;
+    background: var(--background);
+}
+
+/* Preview Popup Styles */
+.preview-popup {
+    padding: 0.5rem;
+}
+
+.preview-popup .leaflet-popup-content-wrapper {
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+}
+
+.preview-popup h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--primary);
+    font-size: 1rem;
+}
+
+.preview-popup p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.preview-popup .rating {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.map-preview .map-actions {
+    padding: 0.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.map-preview .map-action-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: var(--white);
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all var(--transition-normal);
+}
+
+.map-preview .map-action-btn:hover {
+    background: var(--primary-light);
+    transform: translateY(-1px);
+}
+
+.map-preview .map-action-btn:active {
+    transform: translateY(0);
 }
 
 /* Map Page Styles */
@@ -605,27 +840,170 @@ select:focus {
     gap: 0.5rem;
 }
 
-.control-btn {
+.control-btn, .map-ctrl-btn {
     background: var(--white);
     border: none;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem;
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-md);
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    transition: all 0.2s;
+    transition: all var(--transition-normal);
+    min-width: 40px;
+    height: 40px;
 }
 
-.control-btn:hover {
+.control-btn i, .map-ctrl-btn i {
+    font-size: 1.1rem;
+}
+
+.control-btn:hover, .map-ctrl-btn:hover {
+    background: var(--primary);
+    color: var(--white);
+    transform: translateY(-2px);
+}
+
+.control-btn:active, .map-ctrl-btn:active {
+    transform: translateY(0);
+}
+
+.control-btn.active, .map-ctrl-btn.active {
     background: var(--primary);
     color: var(--white);
 }
 
-.control-btn.active {
+/* Custom Map Controls */
+.custom-map-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Info Panel Styles */
+.info-panel {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    width: 350px;
+    background: var(--white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    transform: translateX(-120%);
+    opacity: 0;
+    transition: all var(--transition-normal);
+}
+
+.info-panel.active {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.info-header {
+    padding: 1rem;
     background: var(--primary);
     color: var(--white);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.info-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.info-content {
+    padding: 1rem;
+}
+
+.info-content p {
+    margin: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-light);
+}
+
+.info-actions {
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 0.5rem;
+}
+
+.info-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all var(--transition-normal);
+    font-weight: 600;
+}
+
+.directions-btn {
+    background: var(--accent);
+    color: var(--white);
+}
+
+.details-btn {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.info-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.info-btn:active {
+    transform: translateY(0);
+}
+
+/* Marker Customization */
+.custom-marker {
+    background: var(--primary);
+    border: 2px solid var(--white);
+    border-radius: 50%;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+}
+
+.custom-marker:hover {
+    background: var(--accent);
+    transform: scale(1.1);
+}
+
+.custom-marker.active {
+    background: var(--accent);
+    transform: scale(1.2);
+    z-index: 1000 !important;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .info-panel {
+        width: calc(100% - 2rem);
+        top: auto;
+        bottom: 1rem;
+        transform: translateY(120%);
+    }
+
+    .info-panel.active {
+        transform: translateY(0);
+    }
+
+    .map-controls {
+        top: 5rem;
+    }
 }
 
 /* Restaurant Popup Styles */
