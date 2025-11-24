@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Tastes | Restaurant Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-user-circle"></i> Your Food Identity</h1>
+            <nav>
+                <a href="/"><i class="fas fa-home"></i> Home</a>
+                <a href="/profile" class="active"><i class="fas fa-user"></i> Profile</a>
+                <a href="/map"><i class="fas fa-map-marker-alt"></i> View Map</a>
+                <button id="dark-mode-toggle" class="theme-toggle" title="Toggle Dark Mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="profile-layout">
+        <section class="profile-settings reveal-on-scroll">
+            <div class="form-container">
+                <div class="form-header">
+                    <div>
+                        <h2><i class="fas fa-sliders-h"></i> Personalized Profile</h2>
+                        <p class="section-subtitle">Tune your dining vibes and keep favorites handy.</p>
+                    </div>
+                    <div class="profile-summary-card slim">
+                    <div>
+                        <p class="profile-summary-label">Personalized profile</p>
+                        <p id="profile-summary-text">Loading your saved tastes...</p>
+                    </div>
+                        <div class="profile-summary-actions">
+                            <button id="edit-profile-btn" type="button">
+                                <i class="fas fa-user-edit"></i> Edit Profile
+                            </button>
+                            <button id="apply-profile-btn" type="button">
+                                <i class="fas fa-magic"></i> Apply to Form
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-highlights reveal-on-scroll">
+                    <div class="profile-highlight">
+                        <h3><i class="fas fa-heart"></i> Favorite Cuisines</h3>
+                        <p>Curate your list and we’ll bias recommendations toward those kitchens.</p>
+                    </div>
+                    <div class="profile-highlight">
+                        <h3><i class="fas fa-wallet"></i> Budget Comfort</h3>
+                        <p>Relax with experiences that match your spending comfort and plan stress-free outings.</p>
+                    </div>
+                    <div class="profile-highlight">
+                        <h3><i class="fas fa-calendar-check"></i> Mood Planning</h3>
+                        <p>Quick-launch plans for date nights, fam jams, or team lunches with tailored filters.</p>
+                    </div>
+                    <div class="profile-highlight">
+                        <h3><i class="fas fa-bell"></i> Smart Reminders</h3>
+                        <p>Coming soon: gentle nudges when new spots match your vibe or old favorites trend.</p>
+                    </div>
+                </div>
+
+                <div class="profile-stats-grid reveal-on-scroll">
+                    <div class="profile-stat-card">
+                        <p>Favorite cuisines</p>
+                        <h3 id="profile-cuisine-count">0</h3>
+                    </div>
+                    <div class="profile-stat-card">
+                        <p>Dietary tags</p>
+                        <h3 id="profile-dietary-count">0</h3>
+                    </div>
+                    <div class="profile-stat-card">
+                        <p>Bookmarks saved</p>
+                        <h3 id="profile-bookmark-count">0</h3>
+                    </div>
+                    <div class="profile-stat-card">
+                        <p>Plans created</p>
+                        <h3 id="profile-history-count">0</h3>
+                    </div>
+                </div>
+
+                <div class="profile-feature-grid reveal-on-scroll">
+                    <article class="profile-feature-card">
+                        <h4><i class="fas fa-wand-magic-sparkles"></i> AI Taste Tutor</h4>
+                        <p>We learn every bookmark and rating to shape smarter, mood-aware suggestions.</p>
+                    </article>
+                    <article class="profile-feature-card">
+                        <h4><i class="fas fa-route"></i> Food Trail Designer</h4>
+                        <p>Combine multiple saved spots into one route for brunch-to-dessert adventures.</p>
+                    </article>
+                    <article class="profile-feature-card">
+                        <h4><i class="fas fa-bell"></i> Live Buzz Alerts</h4>
+                        <p>Coming soon: alerts when trending dishes match your saved preferences.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="profile-insights reveal-on-scroll">
+            <div class="personalization-widgets">
+                <div class="widget-card" id="bookmarks-widget">
+                    <div class="widget-header">
+                        <h3><i class="fas fa-bookmark"></i> Saved Spots</h3>
+                        <button id="refresh-bookmarks-btn" type="button"><i class="fas fa-sync"></i></button>
+                    </div>
+                    <ul id="bookmarks-list" class="bookmark-list">
+                        <li class="empty-state">No bookmarks yet. Tap the bookmark icon on any card.</li>
+                    </ul>
+                    <button id="plan-itinerary-btn" type="button" class="widget-action-btn" disabled>
+                        <i class="fas fa-route"></i> Plan Food Trail
+                    </button>
+                </div>
+                <div class="widget-card reveal-on-scroll" id="history-widget">
+                    <div class="widget-header">
+                        <h3><i class="fas fa-clock"></i> Recent Activity</h3>
+                        <button id="refresh-history-btn" type="button"><i class="fas fa-sync"></i></button>
+                    </div>
+                    <ul id="history-list" class="history-list">
+                        <li class="empty-state">Submit a search to build history.</li>
+                    </ul>
+                </div>
+                <div class="widget-card" id="itinerary-widget">
+                    <div class="widget-header">
+                        <h3><i class="fas fa-map-signs"></i> Food Trail Planner</h3>
+                    </div>
+                    <div id="itinerary-output" class="itinerary-output">
+                        <p class="empty-state">Select at least 2 bookmarks and tap "Plan Food Trail".</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-overlay hidden" id="profile-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-profile-modal">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3><i class="fas fa-user-cog"></i> Tune Your Taste Profile</h3>
+            <form id="profile-form">
+                <div class="form-row">
+                    <label for="profile-favorite-cuisines">Favorite cuisines</label>
+                    <input type="text" id="profile-favorite-cuisines" placeholder="e.g., North Indian, Italian">
+                </div>
+                <div class="form-row">
+                    <label for="profile-cuisine-search">Pick from our cuisine list</label>
+                    <div class="profile-cuisine-selector">
+                        <input type="text" id="profile-cuisine-search" placeholder="Search cuisines...">
+                        <div class="profile-cuisine-options" id="profile-cuisine-options">
+                            <p class="empty-state">Loading cuisines...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Dietary needs</label>
+                    <div class="chip-group" id="profile-dietary-group">
+                        <label><input type="checkbox" value="vegetarian"> Vegetarian</label>
+                        <label><input type="checkbox" value="vegan"> Vegan</label>
+                        <label><input type="checkbox" value="gluten-free"> Gluten-free</label>
+                        <label><input type="checkbox" value="jain"> Jain</label>
+                        <label><input type="checkbox" value="halal"> Halal</label>
+                    </div>
+                </div>
+                <div class="form-row inline">
+                    <div>
+                        <label for="profile-budget">Budget comfort</label>
+                        <select id="profile-budget">
+                            <option value="1">1 (Budget)</option>
+                            <option value="2">2 (Moderate)</option>
+                            <option value="3">3 (Premium)</option>
+                            <option value="4">4 (Luxury)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="profile-visit-type">Visit style</label>
+                        <select id="profile-visit-type">
+                            <option value="visit">Dining in</option>
+                            <option value="delivery">Delivery first</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="profile-table-booking">Table booking?</label>
+                        <select id="profile-table-booking">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label for="profile-moods">Moods you care about</label>
+                    <input type="text" id="profile-moods" placeholder="family dinner, date night">
+                </div>
+                <div class="form-row">
+                    <label for="profile-occasions">Occasions to plan</label>
+                    <input type="text" id="profile-occasions" placeholder="business lunch, celebrations">
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="primary-btn">
+                        <i class="fas fa-save"></i> Save Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
+

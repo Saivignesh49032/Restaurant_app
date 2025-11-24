@@ -4,3 +4,6 @@ scikit-learn
 flask
 folium
 joblib
+google-generativeai
+python-dotenv
+requests

@@ -14,15 +14,40 @@
             <h1><i class="fas fa-utensils"></i> Find Your Next Meal</h1>
             <nav>
                 <a href="/" class="active"><i class="fas fa-home"></i> Home</a>
+                <a href="/profile"><i class="fas fa-user"></i> Profile</a>
                 <a href="/map"><i class="fas fa-map-marker-alt"></i> View Map</a>
+                <button id="dark-mode-toggle" class="theme-toggle" title="Toggle Dark Mode">
+                    <i class="fas fa-moon"></i>
+                </button>
             </nav>
         </div>
     </header>
 
     <main class="layout-grid">
-        <section class="preferences-section">
+        <section class="preferences-section reveal-on-scroll">
             <div class="form-container">
                 <h2><i class="fas fa-sliders-h"></i> Your Preferences</h2>
+                <div class="quick-action-bar reveal-on-scroll">
+                    <span class="quick-action-label">Instant vibes:</span>
+                    <div class="quick-chip-list">
+                        <button type="button" class="quick-chip" data-city="Bangalore" data-cuisines="North Indian,Chinese" data-mood="family_dinner" data-price-range="2" data-visit-type="visit">
+                            <i class="fas fa-utensils"></i> Family Feast
+                            <span>Comfort + kid friendly</span>
+                        </button>
+                        <button type="button" class="quick-chip" data-city="Mumbai" data-cuisines="Seafood,Continental" data-mood="date_night" data-price-range="3" data-visit-type="visit">
+                            <i class="fas fa-heart"></i> Date Night
+                            <span>Cozy & premium</span>
+                        </button>
+                        <button type="button" class="quick-chip" data-city="New Delhi" data-cuisines="Street Food,Fast Food" data-mood="solo_work" data-price-range="1" data-visit-type="delivery">
+                            <i class="fas fa-laptop"></i> Work Fuel
+                            <span>Quick bites + delivery</span>
+                        </button>
+                        <button type="button" class="quick-chip" data-city="Goa" data-cuisines="Seafood,Italian" data-occasion="celebration" data-price-range="4" data-visit-type="visit">
+                            <i class="fas fa-martini-glass"></i> Celebration Trail
+                            <span>Beachy & luxe</span>
+                        </button>
+                    </div>
+                </div>
                 <form id="reco-form">
                     <div class="form-group">
                         <label for="city"><i class="fas fa-city"></i> City:</label>
@@ -76,6 +101,105 @@
                             <option value="Yes">Yes</option>
                         </select>
                     </div>
+                    <div class="form-group" id="search-mode-group">
+                        <label for="searchMode"><i class="fas fa-cog"></i> Search Mode:</label>
+                        <select id="searchMode" name="searchMode">
+                            <option value="dataset">Dataset (Fast & Accurate)</option>
+                            <option value="hybrid" selected>Hybrid (Dataset + AI Fallback)</option>
+                            <option value="gemini" id="gemini-option" disabled>AI Search (Gemini)</option>
+                        </select>
+                        <small class="form-hint" id="search-mode-hint">Will try dataset first, then AI if needed</small>
+                    </div>
+                    
+                    <!-- Advanced Filters -->
+                    <div class="advanced-filters">
+                        <div class="filter-toggle" id="filter-toggle">
+                            <span><i class="fas fa-filter"></i> Advanced Filters</span>
+                            <i class="fas fa-chevron-down" id="filter-chevron"></i>
+                        </div>
+                        <div class="filter-content" id="filter-content">
+                            <div class="filter-group">
+                                <label for="minRating"><i class="fas fa-star"></i> Minimum Rating:</label>
+                                <select id="minRating" name="minRating">
+                                    <option value="0">Any Rating</option>
+                                    <option value="3">3.0+</option>
+                                    <option value="3.5">3.5+</option>
+                                    <option value="4" selected>4.0+</option>
+                                    <option value="4.5">4.5+</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="dietaryOptions"><i class="fas fa-leaf"></i> Dietary Options:</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="vegetarian" name="dietary" value="vegetarian">
+                                        <label for="vegetarian">Vegetarian</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="vegan" name="dietary" value="vegan">
+                                        <label for="vegan">Vegan</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="glutenFree" name="dietary" value="gluten-free">
+                                        <label for="glutenFree">Gluten-Free</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="halal" name="dietary" value="halal">
+                                        <label for="halal">Halal</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label for="ambiance"><i class="fas fa-palette"></i> Ambiance:</label>
+                                <select id="ambiance" name="ambiance">
+                                    <option value="">Any</option>
+                                    <option value="casual">Casual</option>
+                                    <option value="romantic">Romantic</option>
+                                    <option value="family-friendly">Family-Friendly</option>
+                                    <option value="fine-dining">Fine Dining</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="features"><i class="fas fa-list"></i> Additional Features:</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="wifi" name="features" value="wifi">
+                                        <label for="wifi">Wi-Fi</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="parking" name="features" value="parking">
+                                        <label for="parking">Parking</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="outdoor" name="features" value="outdoor">
+                                        <label for="outdoor">Outdoor Seating</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label for="moodFilter"><i class="fas fa-face-smile"></i> Mood:</label>
+                                <select id="moodFilter" name="mood">
+                                    <option value="">Any</option>
+                                    <option value="family_dinner">Family Dinner</option>
+                                    <option value="date_night">Date Night</option>
+                                    <option value="business_lunch">Business Lunch</option>
+                                    <option value="celebration">Celebration</option>
+                                    <option value="solo_work">Solo Work</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="occasionFilter"><i class="fas fa-calendar"></i> Occasion:</label>
+                                <select id="occasionFilter" name="occasion">
+                                    <option value="">Any</option>
+                                    <option value="birthday">Birthday</option>
+                                    <option value="anniversary">Anniversary</option>
+                                    <option value="team_outing">Team Outing</option>
+                                    <option value="family_trip">Family Trip</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <button type="submit" class="submit-btn">
                         <i class="fas fa-search"></i> Find Restaurants
                     </button>
@@ -83,7 +207,7 @@
             </div>
         </section>
 
-        <section class="results-section">
+        <section class="results-section reveal-on-scroll">
             <div class="results-container">
                 <h2><i class="fas fa-star"></i> Recommendations</h2>
                 <div class="results-actions">
@@ -104,6 +228,38 @@
                 </div>
             </div>
 
+            <div class="personalization-widgets">
+                <div class="widget-card" id="bookmarks-widget">
+                    <div class="widget-header">
+                        <h3><i class="fas fa-bookmark"></i> Saved Spots</h3>
+                        <button id="refresh-bookmarks-btn" type="button"><i class="fas fa-sync"></i></button>
+                    </div>
+                    <ul id="bookmarks-list" class="bookmark-list">
+                        <li class="empty-state">No bookmarks yet. Tap the bookmark icon on any card.</li>
+                    </ul>
+                    <button id="plan-itinerary-btn" type="button" class="widget-action-btn" disabled>
+                        <i class="fas fa-route"></i> Plan Food Trail
+                    </button>
+                </div>
+                <div class="widget-card" id="history-widget">
+                    <div class="widget-header">
+                        <h3><i class="fas fa-clock"></i> Recent Activity</h3>
+                        <button id="refresh-history-btn" type="button"><i class="fas fa-sync"></i></button>
+                    </div>
+                    <ul id="history-list" class="history-list">
+                        <li class="empty-state">Submit a search to build history.</li>
+                    </ul>
+                </div>
+                <div class="widget-card" id="itinerary-widget">
+                    <div class="widget-header">
+                        <h3><i class="fas fa-map-signs"></i> Food Trail Planner</h3>
+                    </div>
+                    <div id="itinerary-output" class="itinerary-output">
+                        <p class="empty-state">Select at least 2 bookmarks and tap "Plan Food Trail".</p>
+                    </div>
+                </div>
+            </div>
+
             <div id="preview-map" class="map-preview hidden">
                 <h3><i class="fas fa-map-marker-alt"></i> Quick Location Preview</h3>
                 <div class="map-container"></div>
@@ -118,6 +274,78 @@
             </div>
         </section>
     </main>
+
+    <div class="modal-overlay hidden" id="profile-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-profile-modal">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3><i class="fas fa-user-cog"></i> Tune Your Taste Profile</h3>
+            <form id="profile-form">
+                <div class="form-row">
+                    <label for="profile-favorite-cuisines">Favorite cuisines</label>
+                    <input type="text" id="profile-favorite-cuisines" placeholder="e.g., North Indian, Italian">
+                </div>
+                <div class="form-row">
+                    <label for="profile-cuisine-search">Pick from our cuisine list</label>
+                    <div class="profile-cuisine-selector">
+                        <input type="text" id="profile-cuisine-search" placeholder="Search cuisines...">
+                        <div class="profile-cuisine-options" id="profile-cuisine-options">
+                            <p class="empty-state">Loading cuisines...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Dietary needs</label>
+                    <div class="chip-group" id="profile-dietary-group">
+                        <label><input type="checkbox" value="vegetarian"> Vegetarian</label>
+                        <label><input type="checkbox" value="vegan"> Vegan</label>
+                        <label><input type="checkbox" value="gluten-free"> Gluten-free</label>
+                        <label><input type="checkbox" value="jain"> Jain</label>
+                        <label><input type="checkbox" value="halal"> Halal</label>
+                    </div>
+                </div>
+                <div class="form-row inline">
+                    <div>
+                        <label for="profile-budget">Budget comfort</label>
+                        <select id="profile-budget">
+                            <option value="1">1 (Budget)</option>
+                            <option value="2">2 (Moderate)</option>
+                            <option value="3">3 (Premium)</option>
+                            <option value="4">4 (Luxury)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="profile-visit-type">Visit style</label>
+                        <select id="profile-visit-type">
+                            <option value="visit">Dining in</option>
+                            <option value="delivery">Delivery first</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="profile-table-booking">Table booking?</label>
+                        <select id="profile-table-booking">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label for="profile-moods">Moods you care about</label>
+                    <input type="text" id="profile-moods" placeholder="family dinner, date night">
+                </div>
+                <div class="form-row">
+                    <label for="profile-occasions">Occasions to plan</label>
+                    <input type="text" id="profile-occasions" placeholder="business lunch, celebrations">
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="primary-btn">
+                        <i class="fas fa-save"></i> Save Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

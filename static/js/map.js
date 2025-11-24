@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="info-btn directions-btn" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${restaurant['Latitude']},${restaurant['Longitude']}', '_blank')">
                     <i class="fas fa-directions"></i> Get Directions
                 </button>
-                <button class="info-btn details-btn" onclick="window.location.href='/?restaurant=${restaurant['Restaurant ID']}'">
+                <button class="info-btn details-btn" onclick="window.location.href='/restaurant/${restaurant['Restaurant ID']}'">
                     <i class="fas fa-info-circle"></i> View Details
                 </button>
             </div>
@@ -225,5 +225,29 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleInfoBtn.addEventListener('click', () => {
             infoPanel.classList.toggle('active');
         });
+    }
+
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    if (darkModeToggle) {
+        // Check for saved theme preference or default to light mode
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        updateDarkModeIcon(currentTheme);
+
+        darkModeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateDarkModeIcon(newTheme);
+        });
+
+        function updateDarkModeIcon(theme) {
+            const icon = darkModeToggle.querySelector('i');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
     }
 });

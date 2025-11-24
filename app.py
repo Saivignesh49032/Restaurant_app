@@ -1,19 +1,80 @@
-import pandas as pd
-import numpy as np
-import joblib
-import folium
-from folium.plugins import MarkerCluster
+import math
 import os
+import uuid
+from datetime import datetime
+
+import folium
+import joblib
+import numpy as np
+import pandas as pd
+import requests
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
-from sklearn.preprocessing import StandardScaler, OneHotEncoder # We need these for the helper function
+from folium.plugins import MarkerCluster
+from sklearn.compose import ColumnTransformer  # We need this for the helper function
+from sklearn.impute import SimpleImputer  # We need this for the helper function
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.compose import ColumnTransformer # We need this for the helper function
-from sklearn.pipeline import Pipeline # We need this for the helper function
-from sklearn.impute import SimpleImputer # We need this for the helper function
+from sklearn.pipeline import Pipeline  # We need this for the helper function
+from sklearn.preprocessing import StandardScaler, OneHotEncoder  # We need these for the helper function
+from dotenv import load_dotenv
+
+from personalization_store import (
+    add_bookmark,
+    add_history_event,
+    add_interaction,
+    get_analytics_snapshot,
+    get_profile,
+    list_bookmarks,
+    list_history,
+    list_interactions,
+    list_ratings,
+    record_search_analytics,
+    remove_bookmark,
+    set_rating,
+    update_profile
+)
+
+# Load environment variables
+load_dotenv()
+
+# Import Gemini API integration
+try:
+    from gemini_api import (
+        search_restaurants_gemini, 
+        get_restaurant_details_gemini,
+        is_gemini_available
+    )
+    GEMINI_ENABLED = True
+except ImportError:
+    print("Warning: Gemini API module not available")
+    GEMINI_ENABLED = False
+
+# Import Google Places API integration
+try:
+    from google_places_api import (
+        search_restaurants_google,
+        is_google_places_available
+    )
+    GOOGLE_PLACES_ENABLED = True
+except ImportError:
+    print("Warning: Google Places API module not available")
+    GOOGLE_PLACES_ENABLED = False
 
 # --- App Initialization ---
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session management
+
+def _ensure_user_id():
+    if 'user_id' not in session:
+        session['user_id'] = str(uuid.uuid4())
+    return session['user_id']
+
+@app.before_request
+def assign_user():
+    _ensure_user_id()
+
+
+def _resolve_budget_floor(profile: dict) -> int:
+    return int(profile.get('budget') or profile.get('budget_band_min') or 2)
 
 # --- Load All Assets ONCE on Startup ---
 print("Loading application assets...")
@@ -198,12 +259,22 @@ def recommend_restaurants(user_preferences, processed_restaurants_df, original_r
     if filtered_recommendations.empty:
         return pd.DataFrame()
 
-    # 2. 4-star+ Rating Filter
+    # 2. Price Range Filter
+    if user_preferences.get('Price range') is not None:
+        price_range = int(user_preferences.get('Price range'))
+        if 'Price range' in filtered_recommendations.columns:
+            # Ensure Price range is numeric
+            filtered_recommendations['Price range'] = pd.to_numeric(filtered_recommendations['Price range'], errors='coerce')
+            filtered_recommendations = filtered_recommendations[filtered_recommendations['Price range'] == price_range].copy()
+    if filtered_recommendations.empty:
+        return pd.DataFrame()
+
+    # 3. 4-star+ Rating Filter
     filtered_recommendations = filtered_recommendations[filtered_recommendations['Aggregate rating'] >= 4.0].copy()
     if filtered_recommendations.empty:
         return pd.DataFrame()
 
-    # 3. Delivery/Visit Specific Filters
+    # 4. Delivery/Visit Specific Filters
     if user_preferences.get('Visit_or_Delivery') == 'delivery':
         if 'Has Online delivery' in filtered_recommendations.columns:
             filtered_recommendations['Has Online delivery'] = _to_binary_yes_no_series(filtered_recommendations['Has Online delivery'])
@@ -224,34 +295,503 @@ def recommend_restaurants(user_preferences, processed_restaurants_df, original_r
     
     return final_recommendations
 
+# --- Indian Capital Cities List ---
+INDIAN_CAPITAL_CITIES = [
+    'Agra', 'Ahmedabad', 'Allahabad', 'Amritsar', 'Aurangabad',
+    'Bangalore', 'Bhopal', 'Bhubaneshwar', 'Chandigarh', 'Chennai',
+    'Coimbatore', 'Dehradun', 'Faridabad', 'Ghaziabad', 'Goa',
+    'Gurgaon', 'Guwahati', 'Hyderabad', 'Indore', 'Jaipur',
+    'Kanpur', 'Kochi', 'Kolkata', 'Lucknow', 'Ludhiana',
+    'Mangalore', 'Mohali', 'Mumbai', 'Mysore', 'Nagpur',
+    'Nashik', 'New Delhi', 'Noida', 'Panchkula', 'Patna',
+    'Puducherry', 'Pune', 'Ranchi', 'Secunderabad', 'Surat',
+    'Vadodara', 'Varanasi', 'Vizag',
+    # Additional major Indian cities
+    'Aizawl', 'Amaravati', 'Bengaluru', 'Bilaspur', 'Dispur',
+    'Gandhinagar', 'Gangtok', 'Imphal', 'Itanagar', 'Jammu',
+    'Kavaratti', 'Kohima', 'Panaji', 'Port Blair', 'Raipur',
+    'Shillong', 'Shimla', 'Srinagar', 'Thiruvananthapuram', 'Agartala'
+]
+
+# Common Indian cuisines mapping for cities not in dataset
+COMMON_INDIAN_CUISINES = [
+    'North Indian', 'South Indian', 'Chinese', 'Continental', 'Italian',
+    'Mughlai', 'Rajasthani', 'Gujarati', 'Bengali', 'Punjabi',
+    'Maharashtrian', 'Kerala', 'Andhra', 'Tamil', 'Karnataka',
+    'Hyderabadi', 'Kashmiri', 'Goan', 'Assamese', 'Bihari',
+    'Fast Food', 'Biryani', 'Street Food', 'Desserts', 'Beverages',
+    'Seafood', 'Vegetarian', 'Non-Vegetarian', 'Vegan', 'Jain'
+]
+
+# City name normalization mapping (handles variations like Bangalore/Bengaluru)
+CITY_NORMALIZATION = {
+    'bengaluru': 'Bangalore',
+    'bangalore': 'Bangalore',
+    'mumbai': 'Mumbai',
+    'bombay': 'Mumbai',
+    'calcutta': 'Kolkata',
+    'kolkata': 'Kolkata',
+    'madras': 'Chennai',
+    'chennai': 'Chennai',
+    'new delhi': 'New Delhi',
+    'delhi': 'New Delhi',
+    'ncr': 'New Delhi'
+}
+
+def normalize_city_name(city: str) -> str:
+    """Normalize city name to handle variations."""
+    if not city:
+        return city
+    city_lower = city.strip().lower()
+    return CITY_NORMALIZATION.get(city_lower, city.strip())
+
+MOOD_TO_FILTERS = {
+    'family_dinner': {'min_rating': 4.0, 'ambiance': ['family-friendly', 'casual']},
+    'date_night': {'min_rating': 4.2, 'ambiance': ['romantic', 'fine-dining']},
+    'business_lunch': {'min_rating': 4.0, 'ambiance': ['business', 'fine-dining']},
+    'celebration': {'min_rating': 4.3, 'ambiance': ['fine-dining']},
+    'solo_work': {'ambiance': ['casual'], 'features': ['wifi']}
+}
+
+OCCASION_TO_FILTERS = {
+    'birthday': {'ambiance': ['celebratory', 'fine-dining']},
+    'anniversary': {'ambiance': ['romantic']},
+    'team_outing': {'features': ['group seating']},
+    'family_trip': {'ambiance': ['family-friendly']}
+}
+
+
+def _current_time_context():
+    now = datetime.now()
+    hour = now.hour
+    if 5 <= hour < 11:
+        segment = 'breakfast'
+    elif 11 <= hour < 16:
+        segment = 'lunch'
+    elif 16 <= hour < 20:
+        segment = 'evening'
+    else:
+        segment = 'late-night'
+    return {'segment': segment, 'weekday': now.strftime('%A'), 'hour': hour}
+
+
+def _get_weather_context(city: str) -> dict:
+    if not city:
+        return {"summary": "Unknown", "temp_c": None, "is_rainy": False, "is_hot": False}
+    try:
+        resp = requests.get(f"https://wttr.in/{city}?format=j1", timeout=4)
+        data = resp.json()
+        current = data.get('current_condition', [{}])[0]
+        summary = current.get('weatherDesc', [{'value': 'Clear'}])[0].get('value', 'Clear')
+        temp_c = float(current.get('temp_C', 30))
+        is_rainy = 'rain' in summary.lower() or float(current.get('precipMM', 0)) > 0
+        is_hot = temp_c >= 32
+        return {"summary": summary, "temp_c": temp_c, "is_rainy": is_rainy, "is_hot": is_hot}
+    except Exception:
+        return {"summary": "Unknown", "temp_c": None, "is_rainy": False, "is_hot": False}
+
+
+def build_contextual_preferences(city: str, mood: str = None, occasion: str = None) -> dict:
+    time_context = _current_time_context()
+    weather_context = _get_weather_context(city)
+    mood_filters = MOOD_TO_FILTERS.get(mood, {})
+    occasion_filters = OCCASION_TO_FILTERS.get(occasion, {})
+    return {
+        "time": time_context,
+        "weather": weather_context,
+        "mood": mood,
+        "occasion": occasion,
+        "mood_filters": mood_filters,
+        "occasion_filters": occasion_filters
+    }
+
+
+def _normalize_list(value):
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [item.strip() for item in value.split(',') if item.strip()]
+    if isinstance(value, (list, tuple)):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return []
+
+
+def apply_personalization_bias(df, profile: dict, bookmarks: list, ratings: dict, context: dict):
+    if df.empty:
+        return df
+
+    favorite_cuisines = set(map(str.lower, profile.get('favorite_cuisines', [])))
+    bookmarked_ids = {str(b.get('restaurant_id')) for b in bookmarks if b.get('restaurant_id')}
+    rated_ids = {str(rid): details.get('rating', 0) for rid, details in ratings.items()}
+
+    def cuisine_boost(cuisine_string):
+        cuisines = [c.strip().lower() for c in str(cuisine_string).split(',')]
+        overlap = favorite_cuisines.intersection(cuisines)
+        return 0.07 * len(overlap)
+
+    def bookmark_boost(rest_id):
+        if rest_id and str(rest_id) in bookmarked_ids:
+            return 0.05
+        if rest_id and str(rest_id) in rated_ids:
+            rating = float(rated_ids[str(rest_id)])
+            return (rating - 3) * 0.02
+        return 0
+
+    def context_boost(row):
+        bonus = 0
+        time_segment = context.get('time', {}).get('segment')
+        cuisines = str(row.get('Cuisines', '')).lower()
+        if time_segment == 'breakfast' and ('cafe' in cuisines or 'bakery' in cuisines):
+            bonus += 0.03
+        if time_segment == 'late-night' and ('bar' in cuisines or 'fast food' in cuisines):
+            bonus += 0.02
+        weather = context.get('weather', {})
+        if weather.get('is_rainy') and ('rooftop' in cuisines or 'outdoor' in cuisines):
+            bonus -= 0.02
+        if weather.get('is_hot') and 'ice cream' in cuisines:
+            bonus += 0.02
+        return bonus
+
+    personalization_scores = []
+    for _, row in df.iterrows():
+        rest_id = row.get('Restaurant ID') or row.get('Restaurant Name')
+        bonus = cuisine_boost(row.get('Cuisines', ''))
+        bonus += bookmark_boost(rest_id)
+        bonus += context_boost(row)
+        personalization_scores.append(bonus)
+
+    df['Personalization Score'] = personalization_scores
+    df['Similarity Score'] = df['Similarity Score'] + df['Personalization Score']
+    return df.sort_values(by=['Similarity Score', 'Aggregate rating'], ascending=[False, False])
+
+
+def _haversine(lat1, lon1, lat2, lon2):
+    R = 6371
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    d_phi = math.radians(lat2 - lat1)
+    d_lambda = math.radians(lon2 - lon1)
+    a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+def build_itinerary(stops: list):
+    if len(stops) <= 1:
+        return stops
+    route = [stops[0]]
+    remaining = stops[1:]
+    while remaining:
+        current = route[-1]
+        next_stop = min(
+            remaining,
+            key=lambda stop: _haversine(
+                current['latitude'], current['longitude'],
+                stop['latitude'], stop['longitude']
+            )
+        )
+        route.append(next_stop)
+        remaining.remove(next_stop)
+    return route
+
 # --- Helper Routes for Autocomplete ---
 @app.route('/api/cities')
 def get_cities():
-    """Get unique cities for autocomplete."""
-    cities = original_restaurant_data['City'].unique().tolist()
-    return jsonify(sorted(cities))
+    """Get unique cities for autocomplete, including all Indian capital cities."""
+    # Get cities from dataset
+    dataset_cities = set(original_restaurant_data['City'].unique().tolist())
+    
+    # Add all Indian capital cities
+    all_cities = dataset_cities.union(set(INDIAN_CAPITAL_CITIES))
+    
+    # Sort and return
+    return jsonify(sorted(list(all_cities)))
 
 @app.route('/api/cuisines')
 def get_cuisines():
-    """Get unique cuisines for autocomplete."""
+    """Get unique cuisines for autocomplete, with support for cities not in dataset."""
     city = request.args.get('city')
     
     if city:
-        # Filter restaurants by city first
+        # Normalize city name for comparison
+        city_normalized = normalize_city_name(city)
+        
+        # Check if city exists in dataset
         city_restaurants = original_restaurant_data[
-            original_restaurant_data['City'].str.lower() == city.lower()
+            original_restaurant_data['City'].str.strip().str.lower() == city_normalized.lower()
         ]
-        # Get cuisines only from the filtered restaurants
-        all_cuisines = set()
-        for cuisines in city_restaurants['Cuisines'].dropna():
-            all_cuisines.update(c.strip() for c in cuisines.split(','))
+        
+        if not city_restaurants.empty:
+            # City is in dataset - get cuisines from dataset
+            all_cuisines = set()
+            for cuisines in city_restaurants['Cuisines'].dropna():
+                all_cuisines.update(c.strip() for c in cuisines.split(','))
+        else:
+            # City not in dataset - try to get cuisines using Gemini or use common Indian cuisines
+            all_cuisines = set(COMMON_INDIAN_CUISINES)
+            
+            # Try to enhance with Gemini if available
+            if GEMINI_ENABLED and is_gemini_available():
+                try:
+                    # Use Gemini to get city-specific cuisines
+                    prompt = f"""List the most popular and common restaurant cuisines available in {city_normalized}, India. 
+Return only a comma-separated list of cuisine names, nothing else. 
+Examples: North Indian, South Indian, Chinese, Italian, etc."""
+                    
+                    from gemini_api import gemini_search
+                    if gemini_search.is_available():
+                        response = gemini_search.model.generate_content(prompt)
+                        gemini_cuisines = response.text.strip()
+                        
+                        # Parse the response
+                        if gemini_cuisines:
+                            # Remove markdown if present
+                            gemini_cuisines = gemini_cuisines.replace('```', '').strip()
+                            # Split by comma and clean
+                            gemini_list = [c.strip() for c in gemini_cuisines.split(',') if c.strip()]
+                            if gemini_list:
+                                all_cuisines.update(gemini_list)
+                except Exception as e:
+                    print(f"Error getting cuisines from Gemini for {city}: {e}")
+                    # Fallback to common cuisines already set
     else:
-        # If no city selected, return all cuisines
-        all_cuisines = set()
+        # If no city selected, return all cuisines from dataset plus common Indian cuisines
+        all_cuisines = set(COMMON_INDIAN_CUISINES)
         for cuisines in original_restaurant_data['Cuisines'].dropna():
             all_cuisines.update(c.strip() for c in cuisines.split(','))
     
     return jsonify(sorted(list(all_cuisines)))
+
+
+def _normalize_restaurant_payload(raw: dict) -> dict:
+    if not raw:
+        return {}
+    restaurant_id = raw.get('Restaurant ID') or raw.get('restaurant_id') or raw.get('id') or raw.get('name')
+    return {
+        "bookmark_id": raw.get('bookmark_id'),
+        "restaurant_id": str(restaurant_id) if restaurant_id is not None else None,
+        "name": raw.get('Restaurant Name') or raw.get('name'),
+        "city": raw.get('City') or raw.get('city'),
+        "cuisines": raw.get('Cuisines') or raw.get('cuisines'),
+        "rating": raw.get('Aggregate rating') or raw.get('rating'),
+        "price_range": raw.get('Price range') or raw.get('price_range'),
+        "average_cost_for_two": raw.get('Average Cost for two') or raw.get('cost_for_two'),
+        "latitude": raw.get('Latitude') or raw.get('latitude'),
+        "longitude": raw.get('Longitude') or raw.get('longitude'),
+        "snapshot": raw
+    }
+
+
+@app.route('/api/v1/preferences', methods=['GET', 'PUT', 'POST'])
+def api_v1_preferences():
+    user_id = _ensure_user_id()
+    if request.method == 'GET':
+        return jsonify(get_profile(user_id))
+
+    data = request.json or {}
+    try:
+        budget_band_min = int(data.get('budget_band_min')) if data.get('budget_band_min') is not None else None
+        budget_band_max = int(data.get('budget_band_max')) if data.get('budget_band_max') is not None else None
+    except (TypeError, ValueError):
+        return jsonify({"error": "budget_band_min and budget_band_max must be integers"}), 400
+
+    flexible = data.get('flexible_prefs')
+    if flexible is not None and not isinstance(flexible, dict):
+        return jsonify({"error": "flexible_prefs must be an object"}), 400
+
+    profile = update_profile(user_id, {
+        "favorite_cuisines": data.get('favorite_cuisines'),
+        "dietary_needs": data.get('dietary_needs'),
+        "budget_band_min": budget_band_min,
+        "budget_band_max": budget_band_max,
+        "flexible_prefs": flexible,
+        "preferred_visit_type": data.get('preferred_visit_type'),
+        "preferred_table_booking": data.get('preferred_table_booking'),
+        "mood_tags": data.get('mood_tags'),
+        "occasion_tags": data.get('occasion_tags')
+    })
+    return jsonify(profile)
+
+
+@app.route('/api/v1/interactions', methods=['GET', 'POST'])
+def api_v1_interactions():
+    user_id = _ensure_user_id()
+    if request.method == 'POST':
+        data = request.json or {}
+        entity_id = data.get('entity_id')
+        interaction_type = data.get('interaction_type')
+        if not entity_id or not interaction_type:
+            return jsonify({"error": "entity_id and interaction_type are required"}), 400
+
+        interaction = add_interaction(user_id, {
+            "entity_id": entity_id,
+            "entity_type": data.get('entity_type', 'restaurant'),
+            "interaction_type": interaction_type,
+            "value": data.get('value'),
+            "metadata": data.get('metadata')
+        })
+
+        metadata = data.get('metadata') or {}
+        if interaction_type == 'bookmark' and metadata:
+            add_bookmark(user_id, _normalize_restaurant_payload(metadata))
+        if interaction_type == 'rating' and data.get('value'):
+            target_id = metadata.get('restaurant_id') or metadata.get('Restaurant ID') or entity_id
+            try:
+                rating_value = float(data.get('value'))
+                if target_id:
+                    set_rating(user_id, str(target_id), rating_value)
+            except (TypeError, ValueError):
+                pass
+
+        return jsonify(interaction)
+
+    type_filter = request.args.get('type')
+    interactions = list_interactions(user_id, type_filter)
+    return jsonify(interactions)
+
+
+@app.route('/api/profile', methods=['GET', 'POST'])
+def api_profile():
+    user_id = _ensure_user_id()
+    if request.method == 'GET':
+        return jsonify(get_profile(user_id))
+
+    data = request.json or {}
+    budget_value = int(data.get('budget')) if data.get('budget') else None
+    updates = {
+        "favorite_cuisines": _normalize_list(data.get('favorite_cuisines')),
+        "dietary_needs": _normalize_list(data.get('dietary_needs')),
+        "budget_band_min": budget_value,
+        "budget_band_max": budget_value,
+        "preferred_visit_type": data.get('preferred_visit_type'),
+        "preferred_table_booking": data.get('preferred_table_booking'),
+        "mood_tags": _normalize_list(data.get('mood_tags')),
+        "occasion_tags": _normalize_list(data.get('occasion_tags')),
+        "saved_filters": data.get('saved_filters')
+    }
+    profile = update_profile(user_id, updates)
+    return jsonify(profile)
+
+
+@app.route('/api/bookmarks', methods=['GET', 'POST', 'DELETE'])
+def api_bookmarks():
+    user_id = _ensure_user_id()
+    if request.method == 'GET':
+        return jsonify(list_bookmarks(user_id))
+
+    if request.method == 'POST':
+        payload = request.json or {}
+        bookmark = add_bookmark(user_id, _normalize_restaurant_payload(payload))
+        return jsonify(bookmark)
+
+    # DELETE
+    data = request.json or {}
+    bookmark_id = data.get('bookmark_id')
+    if not bookmark_id:
+        return jsonify({"error": "bookmark_id required"}), 400
+    updated = remove_bookmark(user_id, bookmark_id)
+    return jsonify(updated)
+
+
+@app.route('/api/ratings', methods=['GET', 'POST'])
+def api_ratings():
+    user_id = _ensure_user_id()
+    if request.method == 'GET':
+        return jsonify(list_ratings(user_id))
+
+    data = request.json or {}
+    restaurant_id = str(data.get('restaurant_id'))
+    rating = float(data.get('rating', 0))
+    if not restaurant_id:
+        return jsonify({"error": "restaurant_id required"}), 400
+    updated = set_rating(user_id, restaurant_id, rating)
+    return jsonify(updated)
+
+
+@app.route('/api/history', methods=['GET'])
+def api_history():
+    user_id = _ensure_user_id()
+    limit = int(request.args.get('limit', 25))
+    return jsonify(list_history(user_id, limit=limit))
+
+
+@app.route('/api/admin/analytics', methods=['GET'])
+def api_admin_analytics():
+    snapshot = get_analytics_snapshot()
+    return jsonify(snapshot)
+
+
+@app.route('/api/itinerary', methods=['POST'])
+def api_itinerary():
+    user_id = _ensure_user_id()
+    data = request.json or {}
+    stops = data.get('stops', [])
+    if not stops:
+        return jsonify({"error": "At least one stop is required"}), 400
+
+    enriched_stops = []
+    for stop in stops:
+        rest_id = stop.get('restaurant_id') or stop.get('Restaurant ID')
+        lat = stop.get('latitude') or stop.get('Latitude')
+        lon = stop.get('longitude') or stop.get('Longitude')
+        if rest_id and (lat is None or lon is None):
+            try:
+                rest_int = int(rest_id)
+                dataset_row = original_restaurant_data[original_restaurant_data['Restaurant ID'] == rest_int]
+                if not dataset_row.empty:
+                    lat = float(dataset_row.iloc[0]['Latitude'])
+                    lon = float(dataset_row.iloc[0]['Longitude'])
+            except (ValueError, TypeError):
+                pass
+        if lat is None or lon is None:
+            continue
+        enriched_stops.append({
+            "restaurant_id": rest_id,
+            "name": stop.get('name') or stop.get('Restaurant Name'),
+            "latitude": float(lat),
+            "longitude": float(lon),
+            "city": stop.get('city') or stop.get('City'),
+            "cuisines": stop.get('cuisines') or stop.get('Cuisines'),
+            "rating": stop.get('rating') or stop.get('Aggregate rating'),
+            "average_cost_for_two": stop.get('Average Cost for two') or stop.get('cost_for_two')
+        })
+
+    if not enriched_stops:
+        return jsonify({"error": "No stops with valid coordinates"}), 400
+
+    optimized_route = build_itinerary(enriched_stops)
+    legs = []
+    total_distance = 0
+
+    for index in range(len(optimized_route) - 1):
+        current = optimized_route[index]
+        nxt = optimized_route[index + 1]
+        distance = _haversine(current['latitude'], current['longitude'], nxt['latitude'], nxt['longitude'])
+        total_distance += distance
+        travel_time_hours = distance / 25  # assume 25 km/h city average
+        legs.append({
+            "from": current,
+            "to": nxt,
+            "distance_km": round(distance, 2),
+            "travel_time_minutes": round(travel_time_hours * 60)
+        })
+
+    total_travel_time = sum(leg['travel_time_minutes'] for leg in legs)
+    add_history_event(user_id, {
+        "type": "itinerary",
+        "stops": len(optimized_route),
+        "total_distance_km": round(total_distance, 2)
+    })
+
+    share_path = '/'.join(f"{stop['latitude']},{stop['longitude']}" for stop in optimized_route)
+
+    return jsonify({
+        "route": optimized_route,
+        "legs": legs,
+        "total_distance_km": round(total_distance, 2),
+        "total_travel_time_minutes": total_travel_time,
+        "share_link": f"https://www.google.com/maps/dir/{share_path}"
+    })
 
 # --- App Routes ---
 
@@ -374,22 +914,46 @@ def map_page():
     
     return render_template('map.html', map_content=map_html, map_title=map_title)
 
+
+@app.route('/profile')
+def profile_page():
+    return render_template('profile.html')
+
 @app.route('/api/recommend', methods=['POST'])
 def api_recommend():
     """API endpoint to get recommendations."""
     try:
         data = request.json
         print(f"Received data: {data}")
+        user_id = _ensure_user_id()
+        profile = get_profile(user_id)
+        saved_bookmarks = list_bookmarks(user_id)
+        saved_ratings = list_ratings(user_id)
+
+        # Normalize city name
+        city = normalize_city_name(data.get('city', ''))
+
+        cuisines = data.get('cuisines') or ','.join(profile.get('favorite_cuisines', []))
+        if isinstance(cuisines, list):
+            cuisines = ','.join(cuisines)
+        price_range = data.get('priceRange') or _resolve_budget_floor(profile)
+
+        visit_type = data.get('visitType') or profile.get('preferred_visit_type', 'visit')
+        table_booking = data.get('tableBooking') or profile.get('preferred_table_booking', 'No')
+        mood = data.get('mood')
+        occasion = data.get('occasion')
 
         # Build the preference dictionary from the frontend request
         user_preferences = {
-            'Cuisines': data.get('cuisines'),
-            'Price range': int(data.get('priceRange')),
-            'Visit_or_Delivery': data.get('visitType'),
-            'Has Table booking': data.get('tableBooking'),
-            'Has Online delivery': 'Yes' if data.get('visitType') == 'delivery' else 'No',
-            'City': data.get('city')
+            'Cuisines': cuisines,
+            'Price range': int(price_range),
+            'Visit_or_Delivery': visit_type,
+            'Has Table booking': table_booking,
+            'Has Online delivery': 'Yes' if visit_type == 'delivery' else 'No',
+            'City': city
         }
+
+        context = build_contextual_preferences(city, mood=mood, occasion=occasion)
 
         # Run the recommender function
         recommended_restaurants = recommend_restaurants(
@@ -400,6 +964,15 @@ def api_recommend():
             mlb_classes,
             all_features_for_recommender_pipeline
         )
+
+        if not recommended_restaurants.empty:
+            recommended_restaurants = apply_personalization_bias(
+                recommended_restaurants,
+                profile,
+                saved_bookmarks,
+                saved_ratings,
+                context
+            )
         
         # Normalize delivery/booking columns to 0/1 for JSON
         if 'Has Online delivery' in recommended_restaurants.columns:
@@ -412,6 +985,23 @@ def api_recommend():
         
         # Store in session for map view
         session['recommendations'] = results
+        session['search_type'] = 'dataset'
+
+        filters_used = {
+            "mood": mood,
+            "occasion": occasion,
+            "dietary": data.get('dietary'),
+            "ambiance": data.get('ambiance'),
+            "features": data.get('features')
+        }
+        record_search_analytics(user_id, city, filters_used, source='dataset')
+        add_history_event(user_id, {
+            "type": "search",
+            "city": city,
+            "cuisines": cuisines,
+            "results": len(results),
+            "context": context
+        })
         
         return jsonify(results)
         
@@ -461,6 +1051,368 @@ def api_predict_rating():
     except Exception as e:
         print(f"Error processing rating prediction: {e}")
         return jsonify({"error": str(e)}), 500
+
+# --- Gemini API Routes ---
+@app.route('/api/gemini/search', methods=['POST'])
+def api_gemini_search():
+    """API endpoint for Gemini-powered restaurant search."""
+    user_id = _ensure_user_id()
+    if not GEMINI_ENABLED or not is_gemini_available():
+        # Fallback to Google Places if Gemini not available
+        if GOOGLE_PLACES_ENABLED and is_google_places_available():
+            try:
+                data = request.json
+                city = normalize_city_name(data.get('city', ''))
+                cuisines = data.get('cuisines', '').split(',') if data.get('cuisines') else None
+                cuisines = [c.strip() for c in cuisines if c.strip()] if cuisines else None
+                price_range = data.get('priceRange')
+                
+                if not city:
+                    return jsonify({"error": "City is required"}), 400
+                
+                results = search_restaurants_google(
+                    city=city,
+                    cuisines=cuisines,
+                    price_range=price_range,
+                    max_results=10
+                )
+                
+                if results:
+                    session['recommendations'] = results
+                    session['search_type'] = 'google'
+                    record_search_analytics(user_id, city, {"source": "gemini-fallback"}, source='google')
+                    add_history_event(user_id, {
+                        "type": "search",
+                        "city": city,
+                        "results": len(results),
+                        "mode": "google-fallback"
+                    })
+                
+                return jsonify(results)
+            except Exception as e:
+                print(f"Error in Google Places search: {e}")
+                return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Gemini API is not available. Please configure GEMINI_API_KEY."}), 503
+    
+    try:
+        data = request.json
+        city = normalize_city_name(data.get('city', ''))
+        cuisines = data.get('cuisines', '').split(',') if data.get('cuisines') else None
+        cuisines = [c.strip() for c in cuisines if c.strip()] if cuisines else None
+        price_range = data.get('priceRange')
+        visit_type = data.get('visitType')
+        mood = data.get('mood')
+        occasion = data.get('occasion')
+        context = build_contextual_preferences(city, mood=mood, occasion=occasion)
+        
+        if not city:
+            return jsonify({"error": "City is required"}), 400
+        
+        # Search using Gemini
+        results = search_restaurants_gemini(
+            city=city,
+            cuisines=cuisines,
+            price_range=price_range,
+            visit_type=visit_type,
+            max_results=10
+        )
+        
+        # If Gemini returns no results, try Google Places
+        if not results and GOOGLE_PLACES_ENABLED and is_google_places_available():
+            print("Gemini returned no results, trying Google Places...")
+            results = search_restaurants_google(
+                city=city,
+                cuisines=cuisines,
+                price_range=price_range,
+                max_results=10
+            )
+            if results:
+                session['search_type'] = 'google'
+        
+        # Store in session for map view
+        if results:
+            session['recommendations'] = results
+            session['search_type'] = 'gemini'
+            record_search_analytics(user_id, city, {
+                "mood": mood,
+                "occasion": occasion
+            }, source='gemini')
+            add_history_event(user_id, {
+                "type": "search",
+                "city": city,
+                "results": len(results),
+                "context": context,
+                "mode": "gemini"
+            })
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        print(f"Error in Gemini search: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/gemini/details', methods=['POST'])
+def api_gemini_details():
+    """API endpoint to get detailed restaurant information from Gemini."""
+    if not GEMINI_ENABLED or not is_gemini_available():
+        return jsonify({"error": "Gemini API is not available"}), 503
+    
+    try:
+        data = request.json
+        restaurant_name = data.get('name')
+        city = data.get('city')
+        
+        if not restaurant_name or not city:
+            return jsonify({"error": "Restaurant name and city are required"}), 400
+        
+        details = get_restaurant_details_gemini(restaurant_name, city)
+        
+        if details:
+            return jsonify(details)
+        else:
+            return jsonify({"error": "Restaurant details not found"}), 404
+            
+    except Exception as e:
+        print(f"Error getting Gemini details: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/gemini/status', methods=['GET'])
+def api_gemini_status():
+    """Check if Gemini API is available."""
+    return jsonify({
+        "enabled": GEMINI_ENABLED,
+        "available": is_gemini_available() if GEMINI_ENABLED else False
+    })
+
+@app.route('/api/recommend/hybrid', methods=['POST'])
+def api_recommend_hybrid():
+    """Hybrid recommendation: Try dataset first, fallback to Gemini if no results."""
+    try:
+        data = request.json
+        user_id = _ensure_user_id()
+        profile = get_profile(user_id)
+        saved_bookmarks = list_bookmarks(user_id)
+        saved_ratings = list_ratings(user_id)
+        
+        # Normalize city name
+        city = normalize_city_name(data.get('city', ''))
+
+        cuisines = data.get('cuisines') or ','.join(profile.get('favorite_cuisines', []))
+        if isinstance(cuisines, list):
+            cuisines = ','.join(cuisines)
+        price_range = data.get('priceRange') or _resolve_budget_floor(profile)
+        visit_type = data.get('visitType') or profile.get('preferred_visit_type', 'visit')
+        table_booking = data.get('tableBooking') or profile.get('preferred_table_booking', 'No')
+        mood = data.get('mood')
+        occasion = data.get('occasion')
+        context = build_contextual_preferences(city, mood=mood, occasion=occasion)
+        
+        # First, try the dataset-based recommendation
+        user_preferences = {
+            'Cuisines': cuisines,
+            'Price range': int(price_range),
+            'Visit_or_Delivery': visit_type,
+            'Has Table booking': table_booking,
+            'Has Online delivery': 'Yes' if visit_type == 'delivery' else 'No',
+            'City': city
+        }
+        
+        recommended_restaurants = recommend_restaurants(
+            user_preferences,
+            processed_restaurants_df,
+            original_restaurant_data,
+            recommender_preprocessor,
+            mlb_classes,
+            all_features_for_recommender_pipeline
+        )
+        
+        # If we have results from dataset, return them
+        if not recommended_restaurants.empty:
+            recommended_restaurants = apply_personalization_bias(
+                recommended_restaurants,
+                profile,
+                saved_bookmarks,
+                saved_ratings,
+                context
+            )
+            results = recommended_restaurants.to_dict('records')
+            session['recommendations'] = results
+            session['search_type'] = 'hybrid-dataset'
+            filters_used = {
+                "mood": mood,
+                "occasion": occasion,
+                "dietary": data.get('dietary'),
+                "ambiance": data.get('ambiance'),
+                "features": data.get('features')
+            }
+            record_search_analytics(user_id, city, filters_used, source='hybrid', hybrid_fallback='dataset')
+            add_history_event(user_id, {
+                "type": "search",
+                "city": city,
+                "cuisines": cuisines,
+                "results": len(results),
+                "context": context,
+                "mode": "hybrid-dataset"
+            })
+            return jsonify(results)
+        
+        # If no results, try Gemini (if available)
+        if GEMINI_ENABLED and is_gemini_available():
+            # Use normalized city (already defined above)
+            cuisines = data.get('cuisines', '').split(',') if data.get('cuisines') else None
+            cuisines = [c.strip() for c in cuisines if c.strip()] if cuisines else None
+            price_range = data.get('priceRange')
+            
+            print(f"Trying Gemini API for city: {city}, cuisines: {cuisines}, price_range: {price_range}")
+            gemini_results = search_restaurants_gemini(
+                city=city,
+                cuisines=cuisines,
+                price_range=price_range,
+                visit_type=data.get('visitType'),
+                max_results=10
+            )
+            
+            print(f"Gemini returned {len(gemini_results) if gemini_results else 0} results")
+            
+            # Filter Gemini results by price range if specified
+            if gemini_results and price_range:
+                filtered_gemini_results = []
+                for result in gemini_results:
+                    # Check if price_range matches (can be number or text)
+                    result_price = result.get('price_range') or result.get('price_range_text', '')
+                    price_match = False
+                    
+                    # Try numeric match
+                    try:
+                        if int(result_price) == int(price_range):
+                            price_match = True
+                    except (ValueError, TypeError):
+                        pass
+                    
+                    # Try text match
+                    if not price_match:
+                        price_text_map = {
+                            '1': ['cheap', 'budget', '1'],
+                            '2': ['moderate', '2'],
+                            '3': ['expensive', '3'],
+                            '4': ['very expensive', '4']
+                        }
+                        price_keywords = price_text_map.get(str(price_range), [])
+                        result_price_lower = str(result_price).lower()
+                        if any(keyword in result_price_lower for keyword in price_keywords):
+                            price_match = True
+                    
+                    if price_match:
+                        filtered_gemini_results.append(result)
+                
+                gemini_results = filtered_gemini_results
+            
+            if gemini_results:
+                session['recommendations'] = gemini_results
+                session['search_type'] = 'hybrid-gemini'
+                record_search_analytics(user_id, city, {
+                    "mood": mood,
+                    "occasion": occasion
+                }, source='hybrid', hybrid_fallback='gemini')
+                add_history_event(user_id, {
+                    "type": "search",
+                    "city": city,
+                    "cuisines": cuisines,
+                    "results": len(gemini_results),
+                    "context": context,
+                    "mode": "hybrid-gemini"
+                })
+                return jsonify(gemini_results)
+        
+        # If still no results, try Google Places API (if available)
+        if GOOGLE_PLACES_ENABLED and is_google_places_available():
+            # Use normalized city (already defined above)
+            cuisines = data.get('cuisines', '').split(',') if data.get('cuisines') else None
+            cuisines = [c.strip() for c in cuisines if c.strip()] if cuisines else None
+            price_range = data.get('priceRange')
+            
+            print(f"Trying Google Places API for city: {city}, cuisines: {cuisines}, price_range: {price_range}")
+            google_results = search_restaurants_google(
+                city=city,
+                cuisines=cuisines,
+                price_range=price_range,
+                max_results=10
+            )
+            
+            print(f"Google Places returned {len(google_results) if google_results else 0} results")
+            
+            if google_results:
+                session['recommendations'] = google_results
+                session['search_type'] = 'hybrid-google'
+                record_search_analytics(user_id, city, {
+                    "mood": mood,
+                    "occasion": occasion
+                }, source='hybrid', hybrid_fallback='google')
+                add_history_event(user_id, {
+                    "type": "search",
+                    "city": city,
+                    "cuisines": cuisines,
+                    "results": len(google_results),
+                    "context": context,
+                    "mode": "hybrid-google"
+                })
+                return jsonify(google_results)
+        
+        # No results from any source
+        return jsonify([])
+        
+    except Exception as e:
+        print(f"Error in hybrid recommendation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# --- Restaurant Details Route ---
+@app.route('/restaurant/<int:restaurant_id>')
+def restaurant_details(restaurant_id):
+    """Display detailed information about a restaurant."""
+    try:
+        # Try to find restaurant in dataset first
+        restaurant = original_restaurant_data[original_restaurant_data['Restaurant ID'] == restaurant_id]
+        
+        restaurant_data = None
+        gemini_details = None
+        
+        if not restaurant.empty:
+            restaurant_data = restaurant.iloc[0].to_dict()
+            # Try to get enhanced details from Gemini
+            if GEMINI_ENABLED and is_gemini_available():
+                try:
+                    gemini_details = get_restaurant_details_gemini(
+                        restaurant_data.get('Restaurant Name', ''),
+                        restaurant_data.get('City', '')
+                    )
+                except Exception as e:
+                    print(f"Error fetching Gemini details: {e}")
+        
+        # If not in dataset, try Gemini only
+        if restaurant_data is None and GEMINI_ENABLED and is_gemini_available():
+            # This would require name and city from query params
+            name = request.args.get('name')
+            city = request.args.get('city')
+            if name and city:
+                gemini_details = get_restaurant_details_gemini(name, city)
+                if gemini_details:
+                    restaurant_data = gemini_details
+        
+        if restaurant_data is None:
+            return render_template('error.html', 
+                                 error="Restaurant not found",
+                                 message="The restaurant you're looking for doesn't exist in our database."), 404
+        
+        return render_template('restaurant_details.html', 
+                             restaurant=restaurant_data,
+                             gemini_details=gemini_details,
+                             gemini_available=GEMINI_ENABLED and is_gemini_available())
+        
+    except Exception as e:
+        print(f"Error loading restaurant details: {e}")
+        return render_template('error.html', 
+                             error="Error loading restaurant",
+                             message=str(e)), 500
 
 # --- Run the App ---
 if __name__ == '__main__':
