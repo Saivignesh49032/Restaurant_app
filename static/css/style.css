@@ -1,22 +1,42 @@
-/* Modern Restaurant Recommender Styles */
+/* Modern Restaurant Recommender Styles - Updated Color Scheme */
 :root {
-    --primary: #2c3e50;
-    --primary-light: #34495e;
-    --accent: #e74c3c;
-    --accent-light: #ff6b6b;
+    /* Primary Orange */
+    --primary: #FF6B35;
+    --primary-light: #FF8C61;
+    --primary-dark: #E85A2A;
+    
+    /* Dark Charcoal */
+    --charcoal: #2E3238;
+    --charcoal-light: #3D4149;
+    --charcoal-dark: #1F2226;
+    
+    /* Accent Colors */
+    --accent: #F7931E;
+    --accent-light: #FFB84D;
+    
+    /* Status Colors */
     --success: #27ae60;
     --success-light: #2ecc71;
     --warning: #f39c12;
     --info: #3498db;
-    --text: #2c3e50;
+    
+    /* Text Colors */
+    --text: #2E3238;
     --text-light: #6b7280;
-    --border: #dbe3ea;
-    --background: #f5f7fa;
-    --white: #ffffff;
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-    --shadow-hover: 0 15px 30px rgba(0, 0, 0, 0.15);
+    --text-secondary: #5A5D63;
+    
+    /* Background & Border */
+    --border: #E0E0E0;
+    --background: #F5F5F5;
+    --white: #FFFFFF;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(46, 50, 56, 0.1);
+    --shadow-md: 0 4px 8px rgba(46, 50, 56, 0.12);
+    --shadow-lg: 0 10px 15px rgba(46, 50, 56, 0.15);
+    --shadow-hover: 0 15px 30px rgba(46, 50, 56, 0.18);
+    
+    /* Border Radius */
     --radius-sm: 6px;
     --radius-md: 8px;
     --radius-lg: 12px;
@@ -28,6 +48,40 @@
     --scale-hover: scale(1.02);
     --scale-active: scale(0.98);
 }
+
+/* Dark Mode */
+[data-theme="dark"] {
+    /* Primary Orange stays the same */
+    --primary: #FF6B35;
+    --primary-light: #FF8C61;
+    --primary-dark: #E85A2A;
+    
+    /* Inverted Charcoal */
+    --charcoal: #E0E0E0;
+    --charcoal-light: #F5F5F5;
+    --charcoal-dark: #CCCCCC;
+    
+    /* Accent stays vibrant */
+    --accent: #F7931E;
+    --accent-light: #FFB84D;
+    
+    /* Text Colors - Inverted */
+    --text: #FFFFFF;
+    --text-light: #B0B0B0;
+    --text-secondary: #E0E0E0;
+    
+    /* Backgrounds - Dark */
+    --background: #2E3238;
+    --white: #1F2226;
+    --border: rgba(255, 255, 255, 0.15);
+    
+    /* Darker Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+    --shadow-hover: 0 15px 30px rgba(0, 0, 0, 0.6);
+}
+
 
 /* Keyframe Animations */
 @keyframes slideIn {
@@ -85,14 +139,32 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: var(--white);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Background image for light mode only */
+body:not([data-theme]) {
     background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('../images/cute-food-background.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
     background-repeat: no-repeat;
-    color: var(--text);
-    line-height: 1.5;
-    min-height: 100vh;
+}
+
+html[data-theme="light"] body {
+    background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('../images/cute-food-background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
+
+html[data-theme="dark"] body {
+    background: var(--white);
 }
 
 /* Header Styles */

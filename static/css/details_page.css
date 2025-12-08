@@ -1,0 +1,353 @@
+/* ===== RESTAURANT DETAILS PAGE STYLES ===== */
+
+.details-main {
+    padding: 2rem 1rem;
+    min-height: calc(100vh - 80px);
+}
+
+.details-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Restaurant Header */
+.restaurant-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.restaurant-title-section h1 {
+    margin: 0 0 0.5rem 0;
+    color: var(--primary);
+    font-size: 2rem;
+}
+
+.rating-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: var(--white);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+}
+
+.rating-value {
+    font-size: 1.25rem;
+}
+
+.restaurant-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.info-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Info Sections */
+.info-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+}
+
+.info-section:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.info-section h2 {
+    margin: 0 0 1rem 0;
+    color: var(--primary);
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.info-section h2 i {
+    color: var(--accent);
+}
+
+/* Description */
+.description-text {
+    color: var(--text);
+    line-height: 1.8;
+    margin: 0;
+}
+
+/* Tags Container */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag {
+    background: var(--primary-light);
+    color: var(--white);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.tag:hover {
+    background: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.dietary-tag {
+    background: var(--success);
+}
+
+.dietary-tag:hover {
+    background: var(--success-light);
+}
+
+/* Specialties List */
+.specialties-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.specialties-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text);
+}
+
+.specialties-list li:last-child {
+    border-bottom: none;
+}
+
+.specialties-list li i {
+    color: var(--success);
+}
+
+/* Features Grid */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--background);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.feature-item:hover {
+    background: var(--primary-light);
+    color: var(--white);
+    transform: translateX(5px);
+}
+
+.feature-item i {
+    color: var(--success);
+    font-size: 1.1rem;
+}
+
+.feature-item:hover i {
+    color: var(--white);
+}
+
+/* Contact Info */
+.contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text);
+}
+
+.contact-item i {
+    color: var(--accent);
+    width: 20px;
+    text-align: center;
+}
+
+.contact-item a {
+    color: var(--info);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.contact-item a:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+/* Operating Hours */
+.hours-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.hours-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: var(--background);
+    border-radius: var(--radius-sm);
+}
+
+.hours-item .day {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.hours-item .time {
+    color: var(--text-light);
+}
+
+/* Details List */
+.details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--background);
+    border-radius: var(--radius-sm);
+}
+
+.detail-item .label {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.detail-item .value {
+    color: var(--text);
+}
+
+/* Map Section */
+.map-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+.map-section h2 {
+    margin: 0 0 1rem 0;
+    color: var(--primary);
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.details-map {
+    height: 400px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .restaurant-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .restaurant-title-section h1 {
+        font-size: 1.5rem;
+    }
+
+    .restaurant-actions {
+        width: 100%;
+    }
+
+    .restaurant-actions button {
+        flex: 1;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .details-map {
+        height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .details-main {
+        padding: 1rem 0.5rem;
+    }
+
+    .restaurant-header,
+    .info-section,
+    .map-section {
+        padding: 1rem;
+    }
+
+    .restaurant-title-section h1 {
+        font-size: 1.25rem;
+    }
+
+    .rating-badge {
+        padding: 0.4rem 0.8rem;
+    }
+
+    .rating-value {
+        font-size: 1.1rem;
+    }
+}

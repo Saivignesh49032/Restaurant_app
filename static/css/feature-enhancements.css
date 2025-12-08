@@ -1,0 +1,335 @@
+/* Additional CSS for Enhanced Features */
+
+/* Search Bar */
+.search-bar {
+    position: relative;
+    margin: 1rem 0;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    transition: all var(--transition-normal);
+}
+
+.search-input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+}
+
+.search-bar i {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+    pointer-events: none;
+}
+
+/* Bulk Actions */
+.bulk-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--background);
+    border-radius: var(--radius-sm);
+    margin: 0.5rem 0;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin: 0;
+    font-weight: normal;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+/* Enhanced Widget Headers */
+.widget-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.widget-header h3 {
+    flex: 1;
+}
+
+.widget-header .btn-icon {
+    flex-shrink: 0;
+}
+
+/* Bookmark Item Enhancements */
+.bookmark-item {
+    position: relative;
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-normal);
+}
+
+.bookmark-item:hover {
+    background: var(--background);
+    transform: translateX(4px);
+}
+
+.bookmark-item input[type="checkbox"] {
+    margin-right: 0.75rem;
+}
+
+/* History Item Enhancements */
+.history-list li {
+    position: relative;
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+}
+
+.history-list li:hover {
+    background: var(--background);
+}
+
+.history-list li::after {
+    content: '\f01e';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    color: var(--primary);
+}
+
+.history-list li:hover::after {
+    opacity: 1;
+}
+
+/* Filter Badge */
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    background: var(--accent);
+    color: var(--white);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-left: 0.5rem;
+}
+
+/* Clear Filters Button */
+.btn-secondary {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--background);
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+    background: var(--border);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Results Actions Enhancement */
+.results-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.results-actions .action-btn {
+    padding: 0.5rem 1rem;
+    background: var(--white);
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.results-actions .action-btn:hover {
+    background: var(--primary);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* View Toggle */
+.view-toggle {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--background);
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+}
+
+.view-toggle button {
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: var(--text-light);
+}
+
+.view-toggle button.active {
+    background: var(--white);
+    color: var(--primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.view-toggle button:hover:not(.active) {
+    color: var(--primary);
+}
+
+/* Grid View */
+.results-grid.list-view {
+    grid-template-columns: 1fr;
+}
+
+.results-grid.list-view .restaurant-card {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 1rem;
+}
+
+/* Comparison Mode */
+.comparison-mode .restaurant-card {
+    border: 2px solid transparent;
+    transition: all var(--transition-normal);
+}
+
+.comparison-mode .restaurant-card.selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+}
+
+.comparison-checkbox {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 10;
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .search-input {
+    background: rgba(15, 15, 30, 0.6);
+    color: var(--text);
+}
+
+[data-theme="dark"] .bulk-actions {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .view-toggle {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .view-toggle button.active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .bulk-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .results-actions {
+        flex-direction: column;
+    }
+
+    .results-actions .action-btn {
+        width: 100%;
+    }
+
+    .results-grid.list-view .restaurant-card {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animations */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.bookmark-item,
+.history-list li {
+    animation: slideInRight 0.3s ease;
+}
+
+/* Loading State for Widgets */
+.widget-card.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.widget-card.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: inherit;
+}
+
+[data-theme="dark"] .widget-card.loading::after {
+    background: rgba(26, 26, 46, 0.8);
+}

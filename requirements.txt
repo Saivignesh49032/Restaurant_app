@@ -2,8 +2,11 @@ pandas
 numpy
 scikit-learn
 flask
-folium
 joblib
 google-generativeai
 python-dotenv
 requests
+Flask-Login
+Flask-SQLAlchemy
+Flask-Bcrypt
+email-validator

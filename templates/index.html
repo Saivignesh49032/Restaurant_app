@@ -1,22 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Restaurant Recommender</title>
+    <title>🍕 Restaurant Recommender - Find Your Next Delicious Meal!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar-compact.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ui-enhancements.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/feature-enhancements.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fun-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-toggle.css') }}">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="{{ url_for('static', filename='js/ui-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
+    
 </head>
+
 <body>
     <header>
         <div class="header-content">
-            <h1><i class="fas fa-utensils"></i> Find Your Next Meal</h1>
-            <nav>
+            <h1><i class="fas fa-utensils"></i> 🍕 Find Your Next Delicious Meal! 🍔</h1>
+            <button class="hamburger" id="hamburger-menu" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <nav id="main-nav">
                 <a href="/" class="active"><i class="fas fa-home"></i> Home</a>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('auth.dashboard') }}"><i class="fas fa-user"></i> {{ current_user.name }}</a>
+                <a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="{{ url_for('auth.signup') }}"><i class="fas fa-user-plus"></i> Sign Up</a>
+                {% endif %}
                 <a href="/profile"><i class="fas fa-user"></i> Profile</a>
-                <a href="/map"><i class="fas fa-map-marker-alt"></i> View Map</a>
-                <button id="dark-mode-toggle" class="theme-toggle" title="Toggle Dark Mode">
+                <button id="dark-mode-toggle" class="theme-toggle" title="Toggle Dark Mode" onclick="toggleDarkMode()">
                     <i class="fas fa-moon"></i>
                 </button>
             </nav>
@@ -26,28 +51,7 @@
     <main class="layout-grid">
         <section class="preferences-section reveal-on-scroll">
             <div class="form-container">
-                <h2><i class="fas fa-sliders-h"></i> Your Preferences</h2>
-                <div class="quick-action-bar reveal-on-scroll">
-                    <span class="quick-action-label">Instant vibes:</span>
-                    <div class="quick-chip-list">
-                        <button type="button" class="quick-chip" data-city="Bangalore" data-cuisines="North Indian,Chinese" data-mood="family_dinner" data-price-range="2" data-visit-type="visit">
-                            <i class="fas fa-utensils"></i> Family Feast
-                            <span>Comfort + kid friendly</span>
-                        </button>
-                        <button type="button" class="quick-chip" data-city="Mumbai" data-cuisines="Seafood,Continental" data-mood="date_night" data-price-range="3" data-visit-type="visit">
-                            <i class="fas fa-heart"></i> Date Night
-                            <span>Cozy & premium</span>
-                        </button>
-                        <button type="button" class="quick-chip" data-city="New Delhi" data-cuisines="Street Food,Fast Food" data-mood="solo_work" data-price-range="1" data-visit-type="delivery">
-                            <i class="fas fa-laptop"></i> Work Fuel
-                            <span>Quick bites + delivery</span>
-                        </button>
-                        <button type="button" class="quick-chip" data-city="Goa" data-cuisines="Seafood,Italian" data-occasion="celebration" data-price-range="4" data-visit-type="visit">
-                            <i class="fas fa-martini-glass"></i> Celebration Trail
-                            <span>Beachy & luxe</span>
-                        </button>
-                    </div>
-                </div>
+                <h2><i class="fas fa-sliders-h"></i> 🎯 Your Preferences 🍜</h2>
                 <form id="reco-form">
                     <div class="form-group">
                         <label for="city"><i class="fas fa-city"></i> City:</label>
@@ -110,7 +114,7 @@
                         </select>
                         <small class="form-hint" id="search-mode-hint">Will try dataset first, then AI if needed</small>
                     </div>
-                    
+
                     <!-- Advanced Filters -->
                     <div class="advanced-filters">
                         <div class="filter-toggle" id="filter-toggle">
@@ -199,7 +203,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <button type="submit" class="submit-btn">
                         <i class="fas fa-search"></i> Find Restaurants
                     </button>
@@ -209,7 +213,7 @@
 
         <section class="results-section reveal-on-scroll">
             <div class="results-container">
-                <h2><i class="fas fa-star"></i> Recommendations</h2>
+                <h2><i class="fas fa-star"></i> ⭐ Your Recommendations 🍽️</h2>
                 <div class="results-actions">
                     <button id="view-all-map" class="action-btn hidden">
                         <i class="fas fa-map-marked-alt"></i> View All on Map
@@ -244,7 +248,10 @@
                 <div class="widget-card" id="history-widget">
                     <div class="widget-header">
                         <h3><i class="fas fa-clock"></i> Recent Activity</h3>
-                        <button id="refresh-history-btn" type="button"><i class="fas fa-sync"></i></button>
+                        <button id="refresh-history-btn" type="button" title="Refresh"><i
+                                class="fas fa-sync"></i></button>
+                        <button id="clear-history-btn" type="button" title="Clear History" class="danger-btn"><i
+                                class="fas fa-trash"></i></button>
                     </div>
                     <ul id="history-list" class="history-list">
                         <li class="empty-state">Submit a search to build history.</li>
@@ -347,7 +354,105 @@
         </div>
     </div>
 
+    <!-- Review Modal -->
+    <div class="modal-overlay hidden" id="review-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-review-modal">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3><i class="fas fa-comment-dots"></i> Write a Review</h3>
+            <form id="review-form">
+                <input type="hidden" id="review-restaurant-id">
+                <input type="hidden" id="review-restaurant-name">
+                <input type="hidden" id="review-restaurant-city">
+                <input type="hidden" id="review-id">
+
+                <div class="form-row">
+                    <label>Your Rating</label>
+                    <div class="star-rating-input" id="star-rating-input">
+                        <i class="fas fa-star" data-rating="1"></i>
+                        <i class="fas fa-star" data-rating="2"></i>
+                        <i class="fas fa-star" data-rating="3"></i>
+                        <i class="fas fa-star" data-rating="4"></i>
+                        <i class="fas fa-star" data-rating="5"></i>
+                    </div>
+                    <input type="hidden" id="review-rating" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="review-text">Your Review (Optional)</label>
+                    <textarea id="review-text" rows="4" placeholder="Share your experience..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <button type="submit" class="primary-btn">
+                        <i class="fas fa-paper-plane"></i> Submit Review
+                    </button>
+                    <button type="button" class="secondary-btn" id="delete-review-btn" style="display: none;">
+                        <i class="fas fa-trash"></i> Delete Review
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- City Selection Modal for Instant Vibes -->
+    <div class="modal-overlay hidden" id="city-selection-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-city-modal">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3><i class="fas fa-map-marker-alt"></i> Select Your City</h3>
+            <p class="modal-description">Which city are you in?</p>
+            <div class="form-row">
+                <label for="instant-city-input">City</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="instant-city-input" placeholder="Type to search cities..." required>
+                    <div class="autocomplete-list" id="instant-city-list"></div>
+                </div>
+            </div>
+            <div class="form-row">
+                <button type="button" class="primary-btn" id="confirm-city-btn">
+                    <i class="fas fa-check"></i> Confirm & Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Modal -->
+    <div class="modal-overlay hidden" id="rating-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-rating-modal">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3><i class="fas fa-star"></i> Rate This Restaurant</h3>
+            <form id="rating-form">
+                <input type="hidden" id="rating-restaurant-id">
+                <input type="hidden" id="rating-restaurant-name">
+
+                <div class="form-row">
+                    <label>Your Rating</label>
+                    <div class="star-rating-input" id="rating-star-input">
+                        <i class="fas fa-star" data-rating="1"></i>
+                        <i class="fas fa-star" data-rating="2"></i>
+                        <i class="fas fa-star" data-rating="3"></i>
+                        <i class="fas fa-star" data-rating="4"></i>
+                        <i class="fas fa-star" data-rating="5"></i>
+                    </div>
+                    <input type="hidden" id="rating-value" required>
+                </div>
+
+                <div class="form-row">
+                    <button type="submit" class="primary-btn">
+                        <i class="fas fa-check"></i> Submit Rating
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
+
 </html>

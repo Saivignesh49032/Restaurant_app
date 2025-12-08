@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👤 Dashboard - Restaurant Recommender</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fun-theme.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .dashboard-header {
+            background: var(--gradient-fire);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .dashboard-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 2px solid rgba(255, 107, 53, 0.2);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.15);
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .stat-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .stat-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .stat-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(255, 107, 53, 0.25);
+            border-color: var(--primary);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin: 2rem 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .content-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 2px solid rgba(255, 107, 53, 0.15);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(255, 107, 53, 0.2);
+        }
+
+        .bookmark-item,
+        .search-item {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 107, 53, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .bookmark-item:last-child,
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .bookmark-item:hover,
+        .search-item:hover {
+            background: rgba(255, 107, 53, 0.05);
+            border-radius: 8px;
+        }
+
+        .restaurant-name {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .restaurant-meta {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient-fire);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-light);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-utensils"></i> 🍕 Restaurant Recommender 🍔</h1>
+            <nav>
+                <a href="{{ url_for('home') }}"><i class="fas fa-home"></i> Home</a>
+                <a href="{{ url_for('auth.dashboard') }}" class="active"><i class="fas fa-user"></i> Dashboard</a>
+                <a href="{{ url_for('auth.preferences') }}"><i class="fas fa-cog"></i> Preferences</a>
+                <a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>👋 Welcome, {{ current_user.name }}!</h1>
+            <p>Here's your food discovery journey so far</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🔍</div>
+                <div class="stat-number">{{ search_count }}</div>
+                <div class="stat-label">Searches</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">❤️</div>
+                <div class="stat-number">{{ bookmark_count }}</div>
+                <div class="stat-label">Favorites</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-number">{{ current_user.preferences.favorite_cuisines|length if
+                    current_user.preferences else 0 }}</div>
+                <div class="stat-label">Cuisines</div>
+            </div>
+        </div>
+
+        <h2 class="section-title"><i class="fas fa-heart"></i> Your Favorite Restaurants</h2>
+        <div class="content-card">
+            {% if bookmarks %}
+            {% for bookmark in bookmarks %}
+            <div class="bookmark-item">
+                <div class="restaurant-name">{{ bookmark.restaurant_name }}</div>
+                <div class="restaurant-meta">
+                    {% if bookmark.restaurant_data %}
+                    <span>{{ bookmark.restaurant_data.get('cuisines', 'N/A') }}</span> •
+                    <span>⭐ {{ bookmark.restaurant_data.get('rating', 'N/A') }}</span>
+                    {% endif %}
+                    <br>
+                    <small>Saved {{ bookmark.bookmarked_at.strftime('%b %d, %Y') }}</small>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-heart-broken"></i>
+                <p>No favorites yet! Start exploring restaurants and bookmark your favorites.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <h2 class="section-title"><i class="fas fa-history"></i> Recent Searches</h2>
+        <div class="content-card">
+            {% if recent_searches %}
+            {% for search in recent_searches %}
+            <div class="search-item">
+                <div class="restaurant-meta">
+                    <strong>{{ search.search_params.get('City', 'Unknown City') }}</strong>
+                    {% if search.search_params.get('Cuisines') %}
+                    • {{ search.search_params.get('Cuisines') }}
+                    {% endif %}
+                    <br>
+                    <small>{{ search.searched_at.strftime('%b %d, %Y at %I:%M %p') }}</small>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-search"></i>
+                <p>No search history yet! Start discovering restaurants now.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="action-buttons">
+            <a href="{{ url_for('home') }}" class="btn btn-primary">
+                <i class="fas fa-search"></i> Find Restaurants
+            </a>
+            <a href="{{ url_for('auth.preferences') }}" class="btn btn-secondary">
+                <i class="fas fa-cog"></i> Edit Preferences
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>

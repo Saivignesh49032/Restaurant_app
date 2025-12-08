@@ -1,20 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ restaurant.get('Restaurant Name') or restaurant.get('name') }} - Details</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/details_page.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 </head>
+
 <body>
     <header>
         <div class="header-content">
             <h1><i class="fas fa-utensils"></i> Restaurant Details</h1>
             <nav>
                 <a href="/"><i class="fas fa-home"></i> Home</a>
-                <a href="/map"><i class="fas fa-map-marker-alt"></i> Map</a>
                 <button id="dark-mode-toggle" class="theme-toggle" title="Toggle Dark Mode">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -29,16 +31,15 @@
                 <div class="restaurant-title-section">
                     <h1>{{ restaurant.get('Restaurant Name') or restaurant.get('name') }}</h1>
                     <div class="rating-badge">
-                        <span class="rating-value">{{ "%.1f"|format(restaurant.get('Aggregate rating') or restaurant.get('rating') or 0) }}</span>
+                        <span class="rating-value">{{ "%.1f"|format(restaurant.get('Aggregate rating') or
+                            restaurant.get('rating') or 0) }}</span>
                         <i class="fas fa-star"></i>
                     </div>
                 </div>
                 <div class="restaurant-actions">
-                    <button class="action-btn" onclick="window.location.href='/map?highlight={{ restaurant.get('Restaurant ID') or restaurant.get('id') }}'">
-                        <i class="fas fa-map-marker-alt"></i> View on Map
-                    </button>
                     {% if restaurant.get('Latitude') or restaurant.get('latitude') %}
-                    <button class="action-btn directions-btn" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination={{ restaurant.get('Latitude') or restaurant.get('latitude') }},{{ restaurant.get('Longitude') or restaurant.get('longitude') }}', '_blank')">
+                    <button class="action-btn directions-btn"
+                        onclick="window.open('https://www.google.com/maps/dir/?api=1&destination={{ restaurant.get('Latitude') or restaurant.get('latitude') }},{{ restaurant.get('Longitude') or restaurant.get('longitude') }}', '_blank')">
                         <i class="fas fa-route"></i> Get Directions
                     </button>
                     {% endif %}
@@ -54,15 +55,16 @@
                         <h2><i class="fas fa-info-circle"></i> About</h2>
                         <p class="description-text">
                             {% if gemini_details and gemini_details.get('description') %}
-                                {{ gemini_details.get('description') }}
+                            {{ gemini_details.get('description') }}
                             {% elif restaurant.get('description') %}
-                                {{ restaurant.get('description') }}
+                            {{ restaurant.get('description') }}
                             {% else %}
-                                This restaurant offers a great dining experience in {{ restaurant.get('City') or 'the city' }}. 
-                                {% if restaurant.get('Cuisines') %}
-                                Specializing in {{ restaurant.get('Cuisines') }}, it provides quality food and service.
-                                {% endif %}
-                                Visit to enjoy their delicious offerings and excellent ambiance.
+                            This restaurant offers a great dining experience in {{ restaurant.get('City') or 'the city'
+                            }}.
+                            {% if restaurant.get('Cuisines') %}
+                            Specializing in {{ restaurant.get('Cuisines') }}, it provides quality food and service.
+                            {% endif %}
+                            Visit to enjoy their delicious offerings and excellent ambiance.
                             {% endif %}
                         </p>
                     </section>
@@ -71,7 +73,8 @@
                     <section class="info-section">
                         <h2><i class="fas fa-utensils"></i> Cuisines</h2>
                         <div class="tags-container">
-                            {% set cuisines = (gemini_details.get('cuisines') if gemini_details else None) or (restaurant.get('Cuisines', '').split(',') if restaurant.get('Cuisines') else []) %}
+                            {% set cuisines = (gemini_details.get('cuisines') if gemini_details else None) or
+                            (restaurant.get('Cuisines', '').split(',') if restaurant.get('Cuisines') else []) %}
                             {% for cuisine in cuisines %}
                             <span class="tag">{{ cuisine.strip() }}</span>
                             {% endfor %}
@@ -96,10 +99,10 @@
                         <div class="features-grid">
                             {% set features = gemini_details.get('features') if gemini_details else [] %}
                             {% if restaurant.get('Has Online delivery') == 1 %}
-                                {% set _ = features.append('Online Delivery') %}
+                            {% set _ = features.append('Online Delivery') %}
                             {% endif %}
                             {% if restaurant.get('Has Table booking') == 1 %}
-                                {% set _ = features.append('Table Booking') %}
+                            {% set _ = features.append('Table Booking') %}
                             {% endif %}
                             {% for feature in features %}
                             <div class="feature-item">
@@ -108,24 +111,24 @@
                             </div>
                             {% endfor %}
                             {% if gemini_details %}
-                                {% if gemini_details.get('wifi') %}
-                                <div class="feature-item">
-                                    <i class="fas fa-wifi"></i>
-                                    <span>Wi-Fi Available</span>
-                                </div>
-                                {% endif %}
-                                {% if gemini_details.get('outdoor_seating') %}
-                                <div class="feature-item">
-                                    <i class="fas fa-sun"></i>
-                                    <span>Outdoor Seating</span>
-                                </div>
-                                {% endif %}
-                                {% if gemini_details.get('parking') %}
-                                <div class="feature-item">
-                                    <i class="fas fa-parking"></i>
-                                    <span>Parking: {{ gemini_details.get('parking') }}</span>
-                                </div>
-                                {% endif %}
+                            {% if gemini_details.get('wifi') %}
+                            <div class="feature-item">
+                                <i class="fas fa-wifi"></i>
+                                <span>Wi-Fi Available</span>
+                            </div>
+                            {% endif %}
+                            {% if gemini_details.get('outdoor_seating') %}
+                            <div class="feature-item">
+                                <i class="fas fa-sun"></i>
+                                <span>Outdoor Seating</span>
+                            </div>
+                            {% endif %}
+                            {% if gemini_details.get('parking') %}
+                            <div class="feature-item">
+                                <i class="fas fa-parking"></i>
+                                <span>Parking: {{ gemini_details.get('parking') }}</span>
+                            </div>
+                            {% endif %}
                             {% endif %}
                         </div>
                     </section>
@@ -157,7 +160,8 @@
                             {% endif %}
                             <div class="contact-item">
                                 <i class="fas fa-map-marker-alt"></i>
-                                <span>{{ gemini_details.get('address') if gemini_details else (restaurant.get('Address') or restaurant.get('Locality') or 'Address not available') }}</span>
+                                <span>{{ gemini_details.get('address') if gemini_details else (restaurant.get('Address')
+                                    or restaurant.get('Locality') or 'Address not available') }}</span>
                             </div>
                         </div>
                     </section>
@@ -185,18 +189,20 @@
                                 <span class="label">Price Range:</span>
                                 <span class="value">
                                     {% if restaurant.get('Price range') %}
-                                        {% set price_map = {1: 'Cheap', 2: 'Moderate', 3: 'Expensive', 4: 'Very Expensive'} %}
-                                        {{ price_map.get(restaurant.get('Price range')) }}
+                                    {% set price_map = {1: 'Cheap', 2: 'Moderate', 3: 'Expensive', 4: 'Very Expensive'}
+                                    %}
+                                    {{ price_map.get(restaurant.get('Price range')) }}
                                     {% elif gemini_details and gemini_details.get('price_range') %}
-                                        {{ gemini_details.get('price_range') }}
+                                    {{ gemini_details.get('price_range') }}
                                     {% else %}
-                                        Not specified
+                                    Not specified
                                     {% endif %}
                                 </span>
                             </div>
                             <div class="detail-item">
                                 <span class="label">Average Cost for Two:</span>
-                                <span class="value">{{ restaurant.get('Average Cost for two') or 'N/A' }} {{ restaurant.get('Currency') or '' }}</span>
+                                <span class="value">{{ restaurant.get('Average Cost for two') or 'N/A' }} {{
+                                    restaurant.get('Currency') or '' }}</span>
                             </div>
                             {% if gemini_details and gemini_details.get('ambiance') %}
                             <div class="detail-item">
@@ -225,10 +231,10 @@
             {% if restaurant.get('Latitude') or (gemini_details and gemini_details.get('latitude')) %}
             <section class="map-section">
                 <h2><i class="fas fa-map"></i> Location</h2>
-                <div id="restaurant-map" 
-                     class="details-map"
-                     data-lat="{{ restaurant.get('Latitude') or (gemini_details.get('latitude') if gemini_details else '') }}"
-                     data-lon="{{ restaurant.get('Longitude') or (gemini_details.get('longitude') if gemini_details else '') }}"></div>
+                <div id="restaurant-map" class="details-map"
+                    data-lat="{{ restaurant.get('Latitude') or (gemini_details.get('latitude') if gemini_details else '') }}"
+                    data-lon="{{ restaurant.get('Longitude') or (gemini_details.get('longitude') if gemini_details else '') }}">
+                </div>
             </section>
             {% endif %}
         </div>
@@ -244,5 +250,5 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='js/details.js') }}"></script>
 </body>
-</html>
 
+</html>

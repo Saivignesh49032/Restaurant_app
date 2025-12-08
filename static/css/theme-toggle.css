@@ -1,0 +1,73 @@
+/* Simple Dark Mode Styles */
+
+/* Light Mode (Default) */
+:root {
+    --bg-main: #FFFFFF;
+    --bg-secondary: #F5F5F5;
+    --bg-card: #FFFFFF;
+    --text-main: #2E3238;
+    --text-secondary: #5A5D63;
+    --border-color: rgba(46, 50, 56, 0.15);
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+    --bg-main: #1F2226;
+    --bg-secondary: #2E3238;
+    --bg-card: #2E3238;
+    --text-main: #FFFFFF;
+    --text-secondary: #E0E0E0;
+    --border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Apply to body */
+[data-theme="dark"] body {
+    background: var(--bg-main) !important;
+    color: var(--text-main) !important;
+}
+
+/* Apply to cards */
+[data-theme="dark"] .card,
+[data-theme="dark"] .widget-card,
+[data-theme="dark"] .enhanced-widget,
+[data-theme="dark"] .profile-summary-card,
+[data-theme="dark"] .profile-highlight,
+[data-theme="dark"] .profile-feature-card {
+    background: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Apply to header */
+[data-theme="dark"] header {
+    background: var(--bg-secondary) !important;
+    color: var(--text-main) !important;
+}
+
+/* Apply to inputs */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: #3D4149 !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Apply to text */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6,
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] label {
+    color: var(--text-main) !important;
+}
+
+/* Keep primary color orange */
+[data-theme="dark"] .btn-primary {
+    background: #FF6B35 !important;
+    color: #FFFFFF !important;
+}

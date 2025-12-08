@@ -75,7 +75,6 @@ This will install:
 - `numpy` - Numerical computing
 - `scikit-learn` - Machine learning models
 - `flask` - Web framework
-- `folium` - Map visualization
 - `joblib` - Model serialization
 - `google-generativeai` - Gemini AI integration
 - `python-dotenv` - Environment variable management
@@ -399,7 +398,7 @@ This project is for educational purposes. Please ensure you have proper licenses
 ## 🙏 Acknowledgments
 
 - Google Gemini AI for restaurant search capabilities
-- Folium for map visualization
+- Google Maps for location and directions
 - scikit-learn for machine learning models
 - Flask for web framework
 

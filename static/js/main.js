@@ -27,13 +27,13 @@ class Autocomplete {
             }
 
             if (this.autoFetch) {
-            await this.fetchItems();
+                await this.fetchItems();
             }
-            
+
             this.input.addEventListener('input', () => this.onInput());
             this.input.addEventListener('keydown', (e) => this.onKeydown(e));
             document.addEventListener('click', (e) => this.onClick(e));
-            
+
             if (this.listContainer) {
                 this.listContainer.addEventListener('click', (e) => this.onListClick(e));
             }
@@ -68,9 +68,9 @@ class Autocomplete {
             this.wrapper.classList.remove('loading');
             this.input.disabled = shouldRemainDisabled;
             if (!shouldRemainDisabled) {
-            this.input.placeholder = this.urlParams.city 
-                ? `Search cuisines in ${this.urlParams.city}...`
-                : 'Type to search cuisines...';
+                this.input.placeholder = this.urlParams.city
+                    ? `Search cuisines in ${this.urlParams.city}...`
+                    : 'Type to search cuisines...';
             } else {
                 this.input.placeholder = 'Select a city first...';
             }
@@ -90,8 +90,8 @@ class Autocomplete {
         if (this.isDisabled) return;
         const value = this.input.value.toLowerCase().trim();
         this.filteredItems = this.items.filter(item => {
-            return !this.selectedValues.has(item) && 
-                   item.toLowerCase().includes(value);
+            return !this.selectedValues.has(item) &&
+                item.toLowerCase().includes(value);
         });
         this.renderList();
     }
@@ -111,7 +111,7 @@ class Autocomplete {
         this.filteredItems.forEach(item => {
             const div = document.createElement('div');
             div.className = 'autocomplete-item';
-            
+
             // Highlight matching text
             const itemText = item.toString();
             const matchIndex = itemText.toLowerCase().indexOf(searchValue);
@@ -123,7 +123,7 @@ class Autocomplete {
             } else {
                 div.textContent = itemText;
             }
-            
+
             div.dataset.value = item;
             this.listContainer.appendChild(div);
         });
@@ -133,8 +133,8 @@ class Autocomplete {
 
     onKeydown(e) {
         const items = this.listContainer?.querySelectorAll('.autocomplete-item') || [];
-        
-        switch(e.key) {
+
+        switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
                 this.selectedIndex = Math.min(this.selectedIndex + 1, items.length - 1);
@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="checkbox" id="cuisine-${safeId}" ${isSelected ? 'checked' : ''}>
                     <label for="cuisine-${safeId}">${cuisine}</label>
                 `;
-                
+
                 const checkbox = item.querySelector('input[type="checkbox"]');
                 if (checkbox) {
                     checkbox.addEventListener('change', () => {
@@ -1023,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/gemini/status');
             const status = await response.json();
             geminiAvailable = status.available;
-            
+
             if (geminiAvailable) {
                 if (geminiOption) {
                     geminiOption.disabled = false;
@@ -1045,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateSearchModeHint = () => {
             const mode = searchModeSelect.value;
             if (!searchModeHint) return;
-            switch(mode) {
+            switch (mode) {
                 case 'dataset':
                     searchModeHint.textContent = 'Using dataset for quick results';
                     break;
@@ -1096,13 +1096,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterToggle = document.getElementById('filter-toggle');
     const filterContent = document.getElementById('filter-content');
     const filterChevron = document.getElementById('filter-chevron');
-    
+
     if (filterToggle && filterContent) {
         filterToggle.addEventListener('click', () => {
             filterContent.classList.toggle('active');
             if (filterChevron) {
-                filterChevron.style.transform = filterContent.classList.contains('active') 
-                    ? 'rotate(180deg)' 
+                filterChevron.style.transform = filterContent.classList.contains('active')
+                    ? 'rotate(180deg)'
                     : 'rotate(0deg)';
             }
         });
@@ -1137,118 +1137,118 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle form submission
     if (recoForm) {
-    recoForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!resultsList) return;
+        recoForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!resultsList) return;
 
-        // Ensure the city hidden input has a value even if the user typed manually
-        const typedCity = cityInput?.value.trim() || '';
-        if (cityHiddenInput && !cityHiddenInput.value.trim() && typedCity) {
-            cityHiddenInput.value = typedCity;
-        }
+            // Ensure the city hidden input has a value even if the user typed manually
+            const typedCity = cityInput?.value.trim() || '';
+            if (cityHiddenInput && !cityHiddenInput.value.trim() && typedCity) {
+                cityHiddenInput.value = typedCity;
+            }
 
-        // Validate required inputs before making the request
-        if (!cityHiddenInput || !cityHiddenInput.value.trim()) {
-            resultsList.innerHTML = `
+            // Validate required inputs before making the request
+            if (!cityHiddenInput || !cityHiddenInput.value.trim()) {
+                resultsList.innerHTML = `
                 <p class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
                     Please select a city from the suggestions or type a valid city name.
                 </p>`;
-            return;
-        }
+                return;
+            }
 
-        if (cuisinesHiddenInput && !cuisinesHiddenInput.value.trim()) {
-            resultsList.innerHTML = `
+            if (cuisinesHiddenInput && !cuisinesHiddenInput.value.trim()) {
+                resultsList.innerHTML = `
                 <p class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
                     Pick at least one cuisine to continue.
                 </p>`;
-            return;
-        }
-
-        // Show loading message
-        resultsList.innerHTML = '<p class="loading"><i class="fas fa-spinner fa-spin"></i> Finding the best restaurants for you...</p>';
-        viewAllMapBtn.classList.add('hidden');
-
-        // Get form values
-        const formData = new FormData(recoForm);
-        const searchMode = formData.get('searchMode') || 'dataset';
-        const dietarySelections = Array.from(document.querySelectorAll('input[name="dietary"]:checked')).map(cb => cb.value);
-        const featureSelections = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
-        const moodSelection = formData.get('mood') || (userProfile?.mood_tags?.[0] || '');
-        const occasionSelection = formData.get('occasion') || (userProfile?.occasion_tags?.[0] || '');
-        const userPreferences = {
-            city: formData.get('city'),
-            cuisines: formData.get('cuisines'),
-            priceRange: formData.get('priceRange'),
-            visitType: formData.get('visitType'),
-            tableBooking: formData.get('tableBooking'),
-            dietary: dietarySelections,
-            features: featureSelections,
-            ambiance: formData.get('ambiance'),
-            minRating: formData.get('minRating'),
-            mood: moodSelection,
-            occasion: occasionSelection
-        };
-
-        try {
-            // Add loading state to submit button
-            const submitBtn = recoForm.querySelector('.submit-btn');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner"></i> Searching...';
-            submitBtn.classList.add('loading');
-
-            // Determine which endpoint to use based on search mode
-            let endpoint = '/api/recommend'; // Default to dataset
-            if (searchMode === 'gemini') {
-                endpoint = '/api/gemini/search';
-            } else if (searchMode === 'hybrid') {
-                endpoint = '/api/recommend/hybrid';
+                return;
             }
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userPreferences)
-            });
+            // Show loading message
+            resultsList.innerHTML = '<p class="loading"><i class="fas fa-spinner fa-spin"></i> Finding the best restaurants for you...</p>';
+            viewAllMapBtn.classList.add('hidden');
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-            }
+            // Get form values
+            const formData = new FormData(recoForm);
+            const searchMode = formData.get('searchMode') || 'dataset';
+            const dietarySelections = Array.from(document.querySelectorAll('input[name="dietary"]:checked')).map(cb => cb.value);
+            const featureSelections = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
+            const moodSelection = formData.get('mood') || (userProfile?.mood_tags?.[0] || '');
+            const occasionSelection = formData.get('occasion') || (userProfile?.occasion_tags?.[0] || '');
+            const userPreferences = {
+                city: formData.get('city'),
+                cuisines: formData.get('cuisines'),
+                priceRange: formData.get('priceRange'),
+                visitType: formData.get('visitType'),
+                tableBooking: formData.get('tableBooking'),
+                dietary: dietarySelections,
+                features: featureSelections,
+                ambiance: formData.get('ambiance'),
+                minRating: formData.get('minRating'),
+                mood: moodSelection,
+                occasion: occasionSelection
+            };
 
-            currentRestaurants = await response.json();
-            
-            // Restore button state
-            submitBtn.innerHTML = originalBtnText;
-            submitBtn.classList.remove('loading');
+            try {
+                // Add loading state to submit button
+                const submitBtn = recoForm.querySelector('.submit-btn');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner"></i> Searching...';
+                submitBtn.classList.add('loading');
 
-            // Animate results appearance
-            resultsList.style.opacity = '0';
-            displayResults(currentRestaurants);
-            viewAllMapBtn.classList.remove('hidden');
-            loadHistory();
-            
-            // Smooth scroll to results on mobile
-            if (window.innerWidth <= 1024) {
-                resultsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-            
-            // Fade in results
-            setTimeout(() => {
-                resultsList.style.opacity = '1';
-                resultsList.style.transition = 'opacity var(--transition-normal)';
-            }, 100);
+                // Determine which endpoint to use based on search mode
+                let endpoint = '/api/recommend'; // Default to dataset
+                if (searchMode === 'gemini') {
+                    endpoint = '/api/gemini/search';
+                } else if (searchMode === 'hybrid') {
+                    endpoint = '/api/recommend/hybrid';
+                }
 
-        } catch (error) {
-            console.error('Error fetching recommendations:', error);
-            resultsList.innerHTML = `
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userPreferences)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                currentRestaurants = await response.json();
+
+                // Restore button state
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.classList.remove('loading');
+
+                // Animate results appearance
+                resultsList.style.opacity = '0';
+                displayResults(currentRestaurants);
+                viewAllMapBtn.classList.remove('hidden');
+                loadHistory();
+
+                // Smooth scroll to results on mobile
+                if (window.innerWidth <= 1024) {
+                    resultsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+
+                // Fade in results
+                setTimeout(() => {
+                    resultsList.style.opacity = '1';
+                    resultsList.style.transition = 'opacity var(--transition-normal)';
+                }, 100);
+
+            } catch (error) {
+                console.error('Error fetching recommendations:', error);
+                resultsList.innerHTML = `
                 <p class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
                     Error: ${error.message}
                 </p>`;
-        }
-    });
+            }
+        });
     }
 
     // Function to sort restaurants based on selected criteria
@@ -1294,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sortedRestaurants.forEach(r => {
             const card = document.createElement('div');
             card.className = 'restaurant-card';
-            
+
             // Handle both dataset and Gemini result formats
             const restaurantName = r['Restaurant Name'] || r['name'] || 'Unknown Restaurant';
             const rating = parseFloat(r['Aggregate rating'] || r['rating'] || 0).toFixed(1);
@@ -1390,15 +1390,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const previewMap = document.getElementById('preview-map');
         if (previewMap) {
             previewMap.classList.remove('hidden');
-            
+
             // Update action buttons
             const viewInMapBtn = document.getElementById('view-in-map');
             const getDirectionsBtn = document.getElementById('get-directions');
-            
+
             viewInMapBtn.onclick = () => {
                 window.location.href = `/map?highlight=${restaurant['Restaurant ID']}`;
             };
-            
+
             getDirectionsBtn.onclick = () => {
                 const url = `https://www.google.com/maps/dir/?api=1&destination=${restaurant['Latitude']},${restaurant['Longitude']}`;
                 window.open(url, '_blank');
@@ -1441,7 +1441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     closeButton: false,
                     className: 'preview-popup'
                 });
-            
+
             // Auto-open the popup
             marker.openPopup();
         }
@@ -1451,6 +1451,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (viewAllMapBtn) {
         viewAllMapBtn.addEventListener('click', () => {
             window.location.href = '/map';
+        });
+    }
+    // Initialize City Autocomplete
+    const cityListContainer = document.getElementById('city-list');
+    if (cityInput && cityListContainer) {
+        const cityAutocomplete = new Autocomplete(cityInput, {
+            listContainer: cityListContainer,
+            hiddenInput: cityHiddenInput,
+            dataUrl: '/api/cities',
+            autoFetch: true,
+            onSelect: (selectedCity) => {
+                // When city is selected, load cuisines for that city
+                cuisineDropdown.loadCuisines(selectedCity);
+            }
         });
     }
 

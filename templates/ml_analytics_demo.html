@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Analytics Demo - Restaurant Owner Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+            min-width: 150px;
+        }
+
+        input,
+        select {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .prediction-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .prediction-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 5px 0;
+        }
+
+        .trend {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .trend.improving {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .trend.declining {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .trend.stable {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .sentiment-bar {
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: flex;
+        }
+
+        .sentiment-positive,
+        .sentiment-neutral,
+        .sentiment-negative {
+            color: white;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+        }
+
+        .sentiment-positive {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+
+        .sentiment-neutral {
+            background: linear-gradient(90deg, #ffc107, #fd7e14);
+        }
+
+        .sentiment-negative {
+            background: linear-gradient(90deg, #dc3545, #c82333);
+        }
+
+        .aspect-score {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .recommendation {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .recommendation.high {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .recommendation.medium {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+
+        .recommendation.low {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .impact-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .priority-high {
+            background: #dc3545;
+            color: white;
+        }
+
+        .priority-medium {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .priority-low {
+            background: #28a745;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .keyword-tag {
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .search-type {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .search-type label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: auto;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🤖 ML Analytics Demo</h1>
+
+        <div class="input-section">
+            <div class="search-type">
+                <label>
+                    <input type="radio" name="searchType" value="id" checked onchange="toggleSearchType()">
+                    Search by ID
+                </label>
+                <label>
+                    <input type="radio" name="searchType" value="name" onchange="toggleSearchType()">
+                    Search by Name
+                </label>
+            </div>
+
+            <div class="input-group" id="searchById">
+                <label for="restaurantId">Restaurant ID:</label>
+                <input type="number" id="restaurantId" placeholder="Enter restaurant ID (e.g., 53)" value="53">
+                <button onclick="loadAnalytics()">Load Analytics</button>
+            </div>
+
+            <div class="input-group" id="searchByName" style="display: none;">
+                <label for="restaurantName">Restaurant Name:</label>
+                <input type="text" id="restaurantName" placeholder="Enter restaurant name">
+                <button onclick="searchByName()">Search & Load</button>
+            </div>
+        </div>
+
+        <div id="results" class="analytics-grid"></div>
+    </div>
+
+    <script>
+        function toggleSearchType() {
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            document.getElementById('searchById').style.display = searchType === 'id' ? 'flex' : 'none';
+            document.getElementById('searchByName').style.display = searchType === 'name' ? 'flex' : 'none';
+        }
+
+        async function searchByName() {
+            const name = document.getElementById('restaurantName').value.trim();
+            if (!name) {
+                alert('Please enter a restaurant name');
+                return;
+            }
+
+            // Search for restaurant by name (you'll need to add this endpoint)
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">🔍 Searching for restaurant...</div>';
+
+            try {
+                // For now, show message that this feature needs backend support
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>🔍 Search by Name</h2>
+                        <p>This feature requires adding a search endpoint. For now, please use Restaurant ID.</p>
+                        <p style="margin-top: 15px;">Try these IDs: 20, 30, 40, 50, 53</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function loadAnalytics() {
+            const restaurantId = document.getElementById('restaurantId').value;
+            const resultsDiv = document.getElementById('results');
+
+            if (!restaurantId) {
+                alert('Please enter a restaurant ID');
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="loading">🔄 Loading analytics...</div>';
+
+            try {
+                const [predictions, sentiment, recommendations, benchmark] = await Promise.all([
+                    fetch(`/api/analytics/rating-prediction/${restaurantId}`).then(r => r.json()),
+                    fetch(`/api/analytics/sentiment/${restaurantId}`).then(r => r.json()),
+                    fetch(`/api/analytics/recommendations/${restaurantId}`).then(r => r.json()),
+                    fetch(`/api/analytics/competitor-benchmark/${restaurantId}`).then(r => r.json())
+                ]);
+
+                resultsDiv.innerHTML = `
+                    ${renderPredictions(predictions)}
+                    ${renderSentiment(sentiment)}
+                    ${renderRecommendations(recommendations)}
+                    ${renderBenchmark(benchmark)}
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function renderPredictions(data) {
+            if (data.error) return `<div class="card"><div class="error">${data.error}</div></div>`;
+
+            return `
+                <div class="card">
+                    <h2>📈 Rating Predictions</h2>
+                    ${Object.entries(data).map(([period, pred]) => `
+                        <div class="prediction-item">
+                            <h3>${period.replace('_', ' ').toUpperCase()}</h3>
+                            <div class="prediction-value">⭐ ${pred.predicted_rating}</div>
+                            <div>Current: ${pred.current_rating}</div>
+                            <span class="trend ${pred.trend}">${pred.trend.toUpperCase()}</span>
+                            <div style="margin-top: 8px; color: #666;">
+                                Confidence: ${(pred.confidence * 100).toFixed(0)}%
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderSentiment(data) {
+            if (data.error) return `<div class="card"><div class="error">${data.error}</div></div>`;
+
+            const dist = data.sentiment_distribution;
+            const total = dist.positive + dist.neutral + dist.negative;
+            if (total === 0) return `<div class="card"><h2>😊 Sentiment Analysis</h2><p>No reviews available</p></div>`;
+
+            return `
+                <div class="card">
+                    <h2>😊 Sentiment Analysis</h2>
+                    <div style="margin: 20px 0;">
+                        <h3 style="color: #333; margin-bottom: 10px;">Overall: ${data.overall_sentiment.toFixed(2)}</h3>
+                        <div class="sentiment-bar">
+                            <div class="sentiment-positive" style="width: ${(dist.positive / total * 100)}%">
+                                ${dist.positive > 0 ? `${dist.positive}` : ''}
+                            </div>
+                            <div class="sentiment-neutral" style="width: ${(dist.neutral / total * 100)}%">
+                                ${dist.neutral > 0 ? `${dist.neutral}` : ''}
+                            </div>
+                            <div class="sentiment-negative" style="width: ${(dist.negative / total * 100)}%">
+                                ${dist.negative > 0 ? `${dist.negative}` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 style="color: #333; margin: 20px 0 10px 0;">Aspect Scores</h3>
+                    ${Object.entries(data.aspect_scores).map(([aspect, score]) => `
+                        <div class="aspect-score">
+                            <span style="font-weight: 600; text-transform: capitalize;">${aspect}</span>
+                            <span style="font-size: 1.2em; font-weight: bold; color: #667eea;">${score.toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+
+                    ${data.common_keywords.length > 0 ? `
+                        <h3 style="color: #333; margin: 20px 0 10px 0;">Keywords</h3>
+                        <div class="keywords">
+                            ${data.common_keywords.slice(0, 10).map(kw => `
+                                <span class="keyword-tag">${kw.word} (${kw.count})</span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderRecommendations(data) {
+            if (data.error) return `<div class="card"><div class="error">${data.error}</div></div>`;
+            if (!Array.isArray(data) || data.length === 0) {
+                return `<div class="card"><h2>💡 AI Recommendations</h2><p>No recommendations available.</p></div>`;
+            }
+
+            return `
+                <div class="card">
+                    <h2>💡 AI Recommendations</h2>
+                    ${data.map(rec => `
+                        <div class="recommendation ${rec.priority}">
+                            <h4>${rec.title}</h4>
+                            <p>${rec.description}</p>
+                            <span class="impact-badge priority-${rec.priority}">
+                                ${rec.priority.toUpperCase()} | Impact: ${rec.impact_score.toFixed(0)}%
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderBenchmark(data) {
+            if (data.error) return `<div class="card"><div class="error">${data.error}</div></div>`;
+
+            return `
+                <div class="card">
+                    <h2>🏆 Competitor Benchmark</h2>
+                    <div style="margin: 20px 0;">
+                        <div class="aspect-score">
+                            <span>Your Rating</span>
+                            <span style="font-size: 1.2em; font-weight: bold; color: #667eea;">${data.your_rating}</span>
+                        </div>
+                        <div class="aspect-score">
+                            <span>Competitor Average</span>
+                            <span style="font-size: 1.2em; font-weight: bold; color: #667eea;">${data.competitor_avg_rating.toFixed(2)}</span>
+                        </div>
+                        <div class="aspect-score">
+                            <span>Your Rank</span>
+                            <span style="font-size: 1.2em; font-weight: bold; color: #667eea;">#${data.your_rank} of ${data.total_in_category}</span>
+                        </div>
+                    </div>
+
+                    ${data.competitors.length > 0 ? `
+                        <h3 style="color: #333; margin: 20px 0 10px 0;">Top Competitors</h3>
+                        ${data.competitors.slice(0, 5).map(comp => `
+                            <div style="display: flex; justify-content: space-between; padding: 12px; margin: 8px 0; background: #f8f9fa; border-radius: 8px;">
+                                <span style="font-weight: 600;">${comp.name}</span>
+                                <span style="font-size: 1.2em; font-weight: bold; color: #667eea;">⭐ ${comp.rating}</span>
+                            </div>
+                        `).join('')}
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Auto-load on page load
+        window.addEventListener('load', () => {
+            loadAnalytics();
+        });
+    </script>
+</body>
+
+</html>

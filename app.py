@@ -3,19 +3,19 @@ import os
 import uuid
 from datetime import datetime
 
-import folium
 import joblib
 import numpy as np
 import pandas as pd
 import requests
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
-from folium.plugins import MarkerCluster
 from sklearn.compose import ColumnTransformer  # We need this for the helper function
 from sklearn.impute import SimpleImputer  # We need this for the helper function
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.pipeline import Pipeline  # We need this for the helper function
 from sklearn.preprocessing import StandardScaler, OneHotEncoder  # We need these for the helper function
 from dotenv import load_dotenv
+from flask_login import LoginManager, login_required, current_user
+from models import db, User, Review
 
 from personalization_store import (
     add_bookmark,
@@ -30,7 +30,8 @@ from personalization_store import (
     record_search_analytics,
     remove_bookmark,
     set_rating,
-    update_profile
+    update_profile,
+    clear_history
 )
 
 # Load environment variables
@@ -61,9 +62,38 @@ except ImportError:
 
 # --- App Initialization ---
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Required for session management
+
+# Load configuration from config module
+import config as app_config
+app.config.from_object(app_config)
+
+# Initialize database
+db.init_app(app)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+login_manager.login_message = '🔐 Please login to access this page.'
+login_manager.login_message_category = 'info'
+
+# User loader for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Register authentication blueprint
+from auth import auth_bp
+app.register_blueprint(auth_bp)
+
+# Create database tables
+with app.app_context():
+    db.create_all()
+    print("✅ Database initialized successfully!")
 
 def _ensure_user_id():
+    if current_user.is_authenticated:
+        return str(current_user.id)
     if 'user_id' not in session:
         session['user_id'] = str(uuid.uuid4())
     return session['user_id']
@@ -708,11 +738,26 @@ def api_ratings():
     return jsonify(updated)
 
 
-@app.route('/api/history', methods=['GET'])
+@app.route('/api/history', methods=['GET', 'DELETE'])
 def api_history():
     user_id = _ensure_user_id()
+    
+    if request.method == 'DELETE':
+        # Clear history
+        clear_history(user_id)
+        return jsonify({"message": "History cleared successfully"})
+    
+    # GET method - list history
     limit = int(request.args.get('limit', 25))
     return jsonify(list_history(user_id, limit=limit))
+
+
+@app.route('/api/history/clear', methods=['POST'])
+@login_required
+def api_clear_history():
+    user_id = _ensure_user_id()
+    clear_history(user_id)
+    return jsonify({"message": "History cleared successfully"})
 
 
 @app.route('/api/admin/analytics', methods=['GET'])
@@ -793,6 +838,149 @@ def api_itinerary():
         "share_link": f"https://www.google.com/maps/dir/{share_path}"
     })
 
+
+# --- Review API Routes ---
+@app.route('/api/reviews/<restaurant_id>', methods=['GET'])
+def api_get_reviews(restaurant_id):
+    """Get all reviews for a specific restaurant"""
+    try:
+        reviews = Review.query.filter_by(restaurant_id=str(restaurant_id)).order_by(Review.created_at.desc()).all()
+        return jsonify([review.to_dict() for review in reviews])
+    except Exception as e:
+        print(f"Error fetching reviews: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/reviews', methods=['POST'])
+@login_required
+def api_create_review():
+    """Create a new review (requires login)"""
+    try:
+        data = request.json or {}
+        
+        # Validate required fields
+        restaurant_id = str(data.get('restaurant_id'))
+        restaurant_name = data.get('restaurant_name')
+        rating = data.get('rating')
+        
+        if not restaurant_id or not restaurant_name:
+            return jsonify({"error": "restaurant_id and restaurant_name are required"}), 400
+        
+        if not rating or not (1 <= float(rating) <= 5):
+            return jsonify({"error": "rating must be between 1 and 5"}), 400
+        
+        # Check if user already reviewed this restaurant
+        existing_review = Review.query.filter_by(
+            user_id=current_user.id,
+            restaurant_id=restaurant_id
+        ).first()
+        
+        if existing_review:
+            return jsonify({"error": "You have already reviewed this restaurant. Use PUT to update."}), 409
+        
+        # Create new review
+        review = Review(
+            user_id=current_user.id,
+            restaurant_id=restaurant_id,
+            restaurant_name=restaurant_name,
+            restaurant_city=data.get('restaurant_city'),
+            rating=float(rating),
+            review_text=data.get('review_text', '')
+        )
+        
+        db.session.add(review)
+        db.session.commit()
+        
+        return jsonify(review.to_dict()), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating review: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/reviews/<int:review_id>', methods=['PUT'])
+@login_required
+def api_update_review(review_id):
+    """Update an existing review (requires login, own reviews only)"""
+    try:
+        review = Review.query.get(review_id)
+        
+        if not review:
+            return jsonify({"error": "Review not found"}), 404
+        
+        # Check if the review belongs to the current user
+        if review.user_id != current_user.id:
+            return jsonify({"error": "You can only edit your own reviews"}), 403
+        
+        data = request.json or {}
+        
+        # Update fields
+        if 'rating' in data:
+            rating = float(data['rating'])
+            if not (1 <= rating <= 5):
+                return jsonify({"error": "rating must be between 1 and 5"}), 400
+            review.rating = rating
+        
+        if 'review_text' in data:
+            review.review_text = data['review_text']
+        
+        review.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify(review.to_dict())
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating review: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/reviews/<int:review_id>', methods=['DELETE'])
+@login_required
+def api_delete_review(review_id):
+    """Delete a review (requires login, own reviews only)"""
+    try:
+        review = Review.query.get(review_id)
+        
+        if not review:
+            return jsonify({"error": "Review not found"}), 404
+        
+        # Check if the review belongs to the current user
+        if review.user_id != current_user.id:
+            return jsonify({"error": "You can only delete your own reviews"}), 403
+        
+        db.session.delete(review)
+        db.session.commit()
+        
+        return jsonify({"message": "Review deleted successfully"}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting review: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/reviews/user/<restaurant_id>', methods=['GET'])
+@login_required
+def api_get_user_review(restaurant_id):
+    """Get current user's review for a specific restaurant"""
+    try:
+        review = Review.query.filter_by(
+            user_id=current_user.id,
+            restaurant_id=str(restaurant_id)
+        ).first()
+        
+        if review:
+            return jsonify(review.to_dict())
+        else:
+            return jsonify(None), 200
+            
+    except Exception as e:
+        print(f"Error fetching user review: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 # --- App Routes ---
 
 @app.route('/')
@@ -803,116 +991,7 @@ def home():
         del session['recommendations']
     return render_template('index.html')
 
-@app.route('/map')
-def map_page():
-    """Generates and serves the Folium map page."""
-    
-    # Get recommendations from session if they exist
-    restaurants_to_show = None
-    highlight_restaurant = None
-    map_title = "All Restaurants Sample (20%)"
-    
-    if 'recommendations' in session:
-        # Show only recommended restaurants
-        recommendations = pd.DataFrame(session['recommendations'])
-        if not recommendations.empty:
-            if 'Restaurant ID' in recommendations.columns:
-                coord_cols = ['Latitude', 'Longitude']
-                missing_coords = any(
-                    (col not in recommendations.columns) or recommendations[col].isnull().all()
-                    for col in coord_cols
-                )
-                if missing_coords:
-                    coord_source = original_restaurant_data[['Restaurant ID', 'Latitude', 'Longitude']]
-                    recommendations = recommendations.drop(columns=[col for col in coord_cols if col in recommendations.columns], errors='ignore')
-                    recommendations = recommendations.merge(coord_source, on='Restaurant ID', how='left')
-            restaurants_to_show = recommendations
-            map_title = f"Top {len(recommendations)} Recommended Restaurants"
-    
-    # Check if we're highlighting a specific restaurant
-    restaurant_id = request.args.get('highlight')
-    if restaurant_id and restaurants_to_show is not None and not restaurants_to_show.empty:
-        if 'Restaurant ID' in restaurants_to_show.columns:
-            rest_ids = pd.to_numeric(restaurants_to_show['Restaurant ID'], errors='coerce')
-            highlight_rows = restaurants_to_show[rest_ids == int(restaurant_id)]
-            highlight_restaurant = highlight_rows.iloc[0] if not highlight_rows.empty else None
-            if highlight_restaurant is not None:
-                map_title = f"Location: {highlight_restaurant['Restaurant Name']}"
-    
-    # If no recommendations, show a sample
-    def needs_fallback(df):
-        if df is None or df.empty:
-            return True
-        required_cols = {'Latitude', 'Longitude'}
-        if not required_cols.issubset(df.columns):
-            return True
-        # Ensure there is at least one non-null coord
-        return df[list(required_cols)].dropna(how='any').empty
 
-    if needs_fallback(restaurants_to_show):
-        MAX_MARKERS = 800
-        sample_count = min(int(len(original_restaurant_data) * 0.2), MAX_MARKERS)
-        restaurants_to_show = original_restaurant_data.sample(n=sample_count, random_state=42)
-        highlight_restaurant = None
-        map_title = "All Restaurants Sample (20%)"
-
-    # Normalize delivery/booking flags to 0/1 for consistent display
-    if 'Has Online delivery' in restaurants_to_show.columns:
-        restaurants_to_show['Has Online delivery'] = _to_binary_yes_no_series(restaurants_to_show['Has Online delivery'])
-    if 'Has Table booking' in restaurants_to_show.columns:
-        restaurants_to_show['Has Table booking'] = _to_binary_yes_no_series(restaurants_to_show['Has Table booking'])
-
-    # Initialize map (centered on a default location) with canvas rendering enabled for smoother panning
-    # If highlighting a restaurant, center on its location
-    if highlight_restaurant is not None:
-        center = [highlight_restaurant['Latitude'], highlight_restaurant['Longitude']]
-        zoom_start = 15
-    else:
-        # Center on the mean location of restaurants to show
-        center = [restaurants_to_show['Latitude'].mean(), restaurants_to_show['Longitude'].mean()]
-        zoom_start = 11 if 'recommendations' in session else 5
-    
-    m = folium.Map(location=center, zoom_start=zoom_start, width='100%', height='100%', prefer_canvas=True, control_scale=True)
-
-    # Use MarkerCluster to group nearby markers and improve performance
-    cluster = MarkerCluster(name='Restaurants', disableClusteringAtZoom=16).add_to(m)
-
-    # Use lightweight circle markers (faster than full marker icons)
-    for index, row in restaurants_to_show.iterrows():
-        try:
-            lat = float(row['Latitude'])
-            lon = float(row['Longitude'])
-        except Exception:
-            continue
-        
-        # Enhanced popup with more details
-        popup_text = f"""
-            <div class='restaurant-popup'>
-                <h4>{row.get('Restaurant Name', '')}</h4>
-                <p><strong>Rating:</strong> {row.get('Aggregate rating', '')} ⭐</p>
-                <p><strong>Cuisines:</strong> {row.get('Cuisines', '')}</p>
-                <p><strong>Cost for Two:</strong> {row.get('Average Cost for two', '')} {row.get('Currency', '')}</p>
-                <p><strong>Has Online Delivery:</strong> {'Yes' if row.get('Has Online delivery') == 1 else 'No'}</p>
-                <p><strong>Table Booking:</strong> {'Yes' if row.get('Has Table booking') == 1 else 'No'}</p>
-            </div>
-        """
-        
-        # Highlight the selected restaurant
-        is_highlighted = highlight_restaurant is not None and row['Restaurant ID'] == highlight_restaurant['Restaurant ID']
-        
-        folium.CircleMarker(
-            location=[lat, lon],
-            radius=8 if is_highlighted else 4,
-            color='#e74c3c' if is_highlighted else '#3186cc',
-            fill=True,
-            fill_opacity=0.9 if is_highlighted else 0.7,
-            popup=folium.Popup(popup_text, max_width=300)
-        ).add_to(cluster)
-        
-    # Get the map's HTML representation
-    map_html = m._repr_html_()
-    
-    return render_template('map.html', map_content=map_html, map_title=map_title)
 
 
 @app.route('/profile')
@@ -920,6 +999,7 @@ def profile_page():
     return render_template('profile.html')
 
 @app.route('/api/recommend', methods=['POST'])
+@login_required
 def api_recommend():
     """API endpoint to get recommendations."""
     try:
@@ -1054,6 +1134,7 @@ def api_predict_rating():
 
 # --- Gemini API Routes ---
 @app.route('/api/gemini/search', methods=['POST'])
+@login_required
 def api_gemini_search():
     """API endpoint for Gemini-powered restaurant search."""
     user_id = _ensure_user_id()
@@ -1185,6 +1266,7 @@ def api_gemini_status():
     })
 
 @app.route('/api/recommend/hybrid', methods=['POST'])
+@login_required
 def api_recommend_hybrid():
     """Hybrid recommendation: Try dataset first, fallback to Gemini if no results."""
     try:
@@ -1413,6 +1495,316 @@ def restaurant_details(restaurant_id):
         return render_template('error.html', 
                              error="Error loading restaurant",
                              message=str(e)), 500
+
+# --- ML Analytics API Endpoints ---
+
+# Import ML analytics module
+try:
+    from ml_analytics import RatingPredictor, SentimentAnalyzer, RecommendationEngine
+    from models import RestaurantRatingHistory, RestaurantPrediction, AIRecommendation, ReviewSentiment
+    ML_ANALYTICS_ENABLED = True
+except ImportError as e:
+    print(f"⚠️ ML Analytics not fully available: {e}")
+    ML_ANALYTICS_ENABLED = False
+
+
+@app.route('/api/analytics/rating-prediction/<restaurant_id>', methods=['GET'])
+def get_rating_prediction(restaurant_id):
+    """Get ML-based rating prediction for a restaurant"""
+    try:
+        if not ML_ANALYTICS_ENABLED:
+            return jsonify({'error': 'ML Analytics not available'}), 503
+        
+        # Get historical ratings from database
+        history = RestaurantRatingHistory.query.filter_by(
+            restaurant_id=str(restaurant_id)
+        ).order_by(RestaurantRatingHistory.date).all()
+        
+        historical_ratings = [h.average_rating for h in history if h.average_rating]
+        
+        # Get current reviews
+        reviews = Review.query.filter_by(restaurant_id=str(restaurant_id)).all()
+        
+        if reviews:
+            current_rating = sum(r.rating for r in reviews) / len(reviews)
+            review_count = len(reviews)
+        else:
+            current_rating = 0
+            review_count = 0
+        
+        restaurant_data = {
+            'current_rating': current_rating,
+            'review_count': review_count
+        }
+        
+        # Create predictor and get predictions
+        predictor = RatingPredictor()
+        
+        predictions = {
+            '30_days': predictor.predict_rating(restaurant_data, historical_ratings, days_ahead=30),
+            '60_days': predictor.predict_rating(restaurant_data, historical_ratings, days_ahead=60),
+            '90_days': predictor.predict_rating(restaurant_data, historical_ratings, days_ahead=90)
+        }
+        
+        return jsonify(predictions)
+        
+    except Exception as e:
+        print(f"❌ Error in rating prediction: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/analytics/sentiment/<restaurant_id>', methods=['GET'])
+def get_sentiment_analysis(restaurant_id):
+    """Get sentiment analysis of reviews for a restaurant"""
+    try:
+        if not ML_ANALYTICS_ENABLED:
+            return jsonify({'error': 'ML Analytics not available'}), 503
+        
+        # Get all reviews for this restaurant
+        reviews = Review.query.filter_by(restaurant_id=str(restaurant_id)).all()
+        
+        if not reviews:
+            return jsonify({
+                'overall_sentiment': 0,
+                'sentiment_distribution': {'positive': 0, 'neutral': 0, 'negative': 0},
+                'aspect_scores': {},
+                'common_keywords': []
+            })
+        
+        analyzer = SentimentAnalyzer()
+        
+        results = {
+            'overall_sentiment': 0,
+            'sentiment_distribution': {'positive': 0, 'neutral': 0, 'negative': 0},
+            'aspect_scores': {'food': [], 'service': [], 'ambiance': [], 'value': []},
+            'common_keywords': []
+        }
+        
+        all_keywords = []
+        
+        for review in reviews:
+            # Check if already analyzed
+            existing = ReviewSentiment.query.filter_by(review_id=review.id).first()
+            
+            if not existing and review.review_text:
+                # Analyze
+                analysis = analyzer.analyze_review(review.review_text)
+                
+                # Save to database
+                sentiment = ReviewSentiment(
+                    review_id=review.id,
+                    sentiment_score=analysis['sentiment_score'],
+                    sentiment_label=analysis['sentiment_label'],
+                    aspects=analysis['aspects'],
+                    keywords=analysis['keywords']
+                )
+                db.session.add(sentiment)
+                db.session.commit()
+            elif existing:
+                analysis = {
+                    'sentiment_score': existing.sentiment_score,
+                    'sentiment_label': existing.sentiment_label,
+                    'aspects': existing.aspects or {},
+                    'keywords': existing.keywords or []
+                }
+            else:
+                continue
+            
+            # Aggregate results
+            results['overall_sentiment'] += analysis['sentiment_score']
+            results['sentiment_distribution'][analysis['sentiment_label']] += 1
+            
+            for aspect, score in analysis['aspects'].items():
+                if aspect in results['aspect_scores']:
+                    results['aspect_scores'][aspect].append(score)
+            
+            all_keywords.extend(analysis['keywords'])
+        
+        # Calculate averages
+        if reviews:
+            results['overall_sentiment'] /= len(reviews)
+            results['overall_sentiment'] = round(results['overall_sentiment'], 2)
+            
+            for aspect in results['aspect_scores']:
+                if results['aspect_scores'][aspect]:
+                    results['aspect_scores'][aspect] = round(
+                        sum(results['aspect_scores'][aspect]) / len(results['aspect_scores'][aspect]), 2
+                    )
+                else:
+                    results['aspect_scores'][aspect] = 0
+        
+        # Get most common keywords
+        from collections import Counter
+        keyword_counts = Counter(all_keywords)
+        results['common_keywords'] = [
+            {'word': k, 'count': v} for k, v in keyword_counts.most_common(20)
+        ]
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        print(f"❌ Error in sentiment analysis: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/analytics/recommendations/<restaurant_id>', methods=['GET'])
+def get_ai_recommendations(restaurant_id):
+    """Get AI-generated recommendations for a restaurant"""
+    try:
+        if not ML_ANALYTICS_ENABLED:
+            return jsonify({'error': 'ML Analytics not available'}), 503
+        
+        # Get restaurant data from dataset
+        restaurant_row = original_restaurant_data[
+            original_restaurant_data['Restaurant ID'] == int(restaurant_id)
+        ]
+        
+        if restaurant_row.empty:
+            return jsonify({'error': 'Restaurant not found'}), 404
+        
+        restaurant_info = restaurant_row.iloc[0].to_dict()
+        
+        # Get reviews
+        reviews = Review.query.filter_by(restaurant_id=str(restaurant_id)).all()
+        
+        restaurant_data = {
+            'current_rating': restaurant_info.get('Aggregate rating', 0),
+            'review_count': len(reviews),
+            'responded_review_count': 0,  # Placeholder
+            'photo_count': 0,  # Placeholder
+            'has_delivery': restaurant_info.get('Has Online delivery', False),
+            'has_parking': False,
+            'has_wifi': False,
+            'has_outdoor_seating': False,
+            'avg_cost_for_two': restaurant_info.get('Average Cost for two', 0),
+            'cuisines': restaurant_info.get('Cuisines', '')
+        }
+        
+        # Get competitors (same city, similar price range)
+        city = restaurant_info.get('City', '')
+        price_range = restaurant_info.get('Price range', 2)
+        
+        competitors_df = original_restaurant_data[
+            (original_restaurant_data['City'] == city) &
+            (original_restaurant_data['Price range'] == price_range) &
+            (original_restaurant_data['Restaurant ID'] != int(restaurant_id))
+        ].head(10)
+        
+        competitors_data = []
+        for _, comp in competitors_df.iterrows():
+            competitors_data.append({
+                'has_delivery': comp.get('Has Online delivery', False),
+                'has_parking': False,
+                'has_wifi': False,
+                'has_outdoor_seating': False,
+                'avg_cost_for_two': comp.get('Average Cost for two', 0)
+            })
+        
+        # Market trends (placeholder)
+        market_trends = {
+            'vegan_search_increase': 35,
+            'trending_cuisines': ['Korean', 'Mediterranean'],
+            'peak_search_hours': [12, 13, 19, 20]
+        }
+        
+        # Generate recommendations
+        engine = RecommendationEngine()
+        recommendations = engine.generate_recommendations(
+            restaurant_data,
+            competitors_data,
+            market_trends
+        )
+        
+        # Save to database
+        for rec in recommendations:
+            # Check if similar recommendation already exists
+            existing = AIRecommendation.query.filter_by(
+                restaurant_id=str(restaurant_id),
+                title=rec['title'],
+                status='pending'
+            ).first()
+            
+            if not existing:
+                ai_rec = AIRecommendation(
+                    restaurant_id=str(restaurant_id),
+                    recommendation_type=rec['type'],
+                    title=rec['title'],
+                    description=rec['description'],
+                    impact_score=rec['impact_score'],
+                    priority=rec['priority'],
+                    status='pending'
+                )
+                db.session.add(ai_rec)
+        
+        db.session.commit()
+        
+        return jsonify(recommendations)
+        
+    except Exception as e:
+        print(f"❌ Error generating recommendations: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/analytics/competitor-benchmark/<restaurant_id>', methods=['GET'])
+def get_competitor_benchmark(restaurant_id):
+    """Get competitor benchmarking data"""
+    try:
+        # Get restaurant details
+        restaurant_row = original_restaurant_data[
+            original_restaurant_data['Restaurant ID'] == int(restaurant_id)
+        ]
+        
+        if restaurant_row.empty:
+            return jsonify({'error': 'Restaurant not found'}), 404
+        
+        restaurant = restaurant_row.iloc[0]
+        
+        # Find competitors (same city, similar price range)
+        city = restaurant['City']
+        price_range = restaurant.get('Price range', 2)
+        
+        competitors = original_restaurant_data[
+            (original_restaurant_data['City'] == city) &
+            (original_restaurant_data['Price range'] == price_range) &
+            (original_restaurant_data['Restaurant ID'] != int(restaurant_id))
+        ].head(10)
+        
+        benchmark = {
+            'your_rating': restaurant['Aggregate rating'],
+            'competitor_avg_rating': competitors['Aggregate rating'].mean() if not competitors.empty else 0,
+            'your_rank': None,
+            'total_in_category': len(competitors) + 1,
+            'competitors': []
+        }
+        
+        # Calculate rank
+        all_restaurants = pd.concat([restaurant_row, competitors])
+        all_restaurants_sorted = all_restaurants.sort_values('Aggregate rating', ascending=False)
+        benchmark['your_rank'] = list(all_restaurants_sorted['Restaurant ID']).index(int(restaurant_id)) + 1
+        
+        # Add competitor details
+        for _, comp in competitors.iterrows():
+            benchmark['competitors'].append({
+                'name': comp['Restaurant Name'],
+                'rating': comp['Aggregate rating'],
+                'features': {
+                    'delivery': comp.get('Has Online delivery', False),
+                    'table_booking': comp.get('Has Table booking', False)
+                }
+            })
+        
+        return jsonify(benchmark)
+        
+    except Exception as e:
+        print(f"❌ Error in competitor benchmark: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/ml-analytics-demo')
+def ml_analytics_demo():
+    """Demo page for ML analytics features"""
+    return render_template('ml_analytics_demo.html')
+
 
 # --- Run the App ---
 if __name__ == '__main__':

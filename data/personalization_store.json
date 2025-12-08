@@ -477,5 +477,687 @@
         "google": 0
       }
     }
+  },
+  "d9daa259-ed6c-49e1-ab64-eeb2f4a728c5": {
+    "profile": {
+      "favorite_cuisines": [],
+      "dietary_needs": [],
+      "budget": 2,
+      "budget_band_min": 1,
+      "budget_band_max": 4,
+      "flexible_prefs": {},
+      "preferred_visit_type": "visit",
+      "preferred_table_booking": "No",
+      "mood_tags": [],
+      "occasion_tags": [],
+      "saved_filters": {},
+      "updated_at": "2025-11-24T05:25:29.334611"
+    },
+    "bookmarks": [],
+    "ratings": {},
+    "history": [
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "cuisines": "South Indian",
+        "results": 1,
+        "context": {
+          "time": {
+            "segment": "breakfast",
+            "weekday": "Monday",
+            "hour": 10
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "ec9c09c9-c28f-4307-b128-887510c58a60",
+        "timestamp": "2025-11-24T05:25:29.381601"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "breakfast",
+            "weekday": "Monday",
+            "hour": 10
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "ab1b87d5-63ef-4576-898d-d745dd7bd372",
+        "timestamp": "2025-11-24T05:26:32.464233"
+      }
+    ],
+    "interactions": [],
+    "analytics": {
+      "cities": {
+        "bangalore": 2
+      },
+      "filters": {
+        "dietary": 1
+      },
+      "search_modes": {
+        "dataset": 0,
+        "hybrid": 1,
+        "gemini": 1,
+        "google": 0
+      },
+      "source_usage": {
+        "dataset": 1,
+        "gemini": 1,
+        "google": 0
+      }
+    }
+  },
+  "53f04b38-0187-4f8f-968a-93b5032b0c76": {
+    "profile": {
+      "favorite_cuisines": [],
+      "dietary_needs": [],
+      "budget": 2,
+      "budget_band_min": 1,
+      "budget_band_max": 4,
+      "flexible_prefs": {},
+      "preferred_visit_type": "visit",
+      "preferred_table_booking": "No",
+      "mood_tags": [],
+      "occasion_tags": [],
+      "saved_filters": {},
+      "updated_at": "2025-11-25T06:53:25.855743"
+    },
+    "bookmarks": [],
+    "ratings": {
+      "Kulfi Culture": {
+        "rating": 4.5,
+        "updated_at": "2025-11-25T07:00:56.537199"
+      }
+    },
+    "history": [
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Tuesday",
+            "hour": 12
+          },
+          "weather": {
+            "summary": "Partly cloudy",
+            "temp_c": 25.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "03564855-8579-4981-ae9b-a0969ffd678e",
+        "timestamp": "2025-11-25T06:53:25.905006"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Tuesday",
+            "hour": 12
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "1c0377c7-9870-42bb-98ed-862c31e277da",
+        "timestamp": "2025-11-25T06:55:13.625913"
+      }
+    ],
+    "interactions": [
+      {
+        "id": "2d65f8a0-fb7d-435f-9f50-09643d57c95c",
+        "user_id": "53f04b38-0187-4f8f-968a-93b5032b0c76",
+        "entity_id": "Kulfi Culture",
+        "entity_type": "restaurant",
+        "interaction_type": "rating",
+        "value": 4.5,
+        "metadata": {
+          "restaurant_id": "Kulfi Culture",
+          "name": "Kulfi Culture",
+          "cuisines": "Desserts, Kulfi, Ice Cream",
+          "rating": 4.3,
+          "average_cost_for_two": 250,
+          "latitude": 12.9234,
+          "longitude": 77.5843
+        },
+        "created_at": "2025-11-25T07:00:56.460329"
+      }
+    ],
+    "analytics": {
+      "cities": {
+        "bangalore": 2
+      },
+      "filters": {},
+      "search_modes": {
+        "dataset": 0,
+        "hybrid": 0,
+        "gemini": 2,
+        "google": 0
+      },
+      "source_usage": {
+        "dataset": 0,
+        "gemini": 2,
+        "google": 0
+      }
+    }
+  },
+  "ae2bd832-c059-44ec-a7dc-c1c46c5994bc": {
+    "profile": {
+      "favorite_cuisines": [],
+      "dietary_needs": [],
+      "budget": 2,
+      "budget_band_min": 1,
+      "budget_band_max": 4,
+      "flexible_prefs": {},
+      "preferred_visit_type": "visit",
+      "preferred_table_booking": "No",
+      "mood_tags": [],
+      "occasion_tags": [],
+      "saved_filters": {},
+      "updated_at": "2025-11-25T08:44:40.547949"
+    },
+    "bookmarks": [],
+    "ratings": {},
+    "history": [
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Tuesday",
+            "hour": 14
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "family_dinner",
+          "occasion": "",
+          "mood_filters": {
+            "min_rating": 4.0,
+            "ambiance": [
+              "family-friendly",
+              "casual"
+            ]
+          },
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "33dcd5a8-e136-4fa0-9c2f-1093d9df985c",
+        "timestamp": "2025-11-25T08:44:40.570684"
+      }
+    ],
+    "interactions": [],
+    "analytics": {
+      "cities": {
+        "bangalore": 1
+      },
+      "filters": {
+        "mood": 1
+      },
+      "search_modes": {
+        "dataset": 0,
+        "hybrid": 0,
+        "gemini": 1,
+        "google": 0
+      },
+      "source_usage": {
+        "dataset": 0,
+        "gemini": 1,
+        "google": 0
+      }
+    }
+  },
+  "d21ccadb-3489-43c3-b878-c4e02be70e50": {
+    "profile": {
+      "favorite_cuisines": [],
+      "dietary_needs": [],
+      "budget": 2,
+      "budget_band_min": 1,
+      "budget_band_max": 4,
+      "flexible_prefs": {},
+      "preferred_visit_type": "visit",
+      "preferred_table_booking": "No",
+      "mood_tags": [],
+      "occasion_tags": [],
+      "saved_filters": {},
+      "updated_at": "2025-11-26T05:41:56.104791"
+    },
+    "bookmarks": [
+      {
+        "bookmark_id": "03f804c8-4e9c-48ba-af00-87ea154b9c5e",
+        "restaurant_id": "18305628",
+        "name": "Eat Street",
+        "city": "Bangalore",
+        "cuisines": "North Indian, Chinese, Italian, Street Food, Desserts",
+        "rating": 4.3,
+        "price_range": null,
+        "average_cost_for_two": null,
+        "latitude": 12.939496,
+        "longitude": 77.625999,
+        "snapshot": {
+          "restaurant_id": 18305628,
+          "name": "Eat Street",
+          "city": "Bangalore",
+          "cuisines": "North Indian, Chinese, Italian, Street Food, Desserts",
+          "rating": 4.3,
+          "average_cost_for_two": 400,
+          "latitude": 12.939496,
+          "longitude": 77.625999
+        },
+        "saved_at": "2025-11-26T05:42:02.486872"
+      }
+    ],
+    "ratings": {},
+    "history": [
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "cuisines": "Burger",
+        "results": 1,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Wednesday",
+            "hour": 11
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "35f6eb33-0a42-4852-8cc6-92d32a1af61f",
+        "timestamp": "2025-11-26T05:41:56.149269"
+      }
+    ],
+    "interactions": [
+      {
+        "id": "fec879a8-41b6-4cbb-93de-cd437e7b85d4",
+        "user_id": "d21ccadb-3489-43c3-b878-c4e02be70e50",
+        "entity_id": "18305628",
+        "entity_type": "restaurant",
+        "interaction_type": "bookmark",
+        "value": null,
+        "metadata": {
+          "restaurant_id": 18305628,
+          "name": "Eat Street",
+          "city": "Bangalore",
+          "cuisines": "North Indian, Chinese, Italian, Street Food, Desserts",
+          "rating": 4.3,
+          "average_cost_for_two": 400,
+          "latitude": 12.939496,
+          "longitude": 77.625999
+        },
+        "created_at": "2025-11-26T05:42:02.424687"
+      }
+    ],
+    "analytics": {
+      "cities": {
+        "bangalore": 1
+      },
+      "filters": {},
+      "search_modes": {
+        "dataset": 0,
+        "hybrid": 1,
+        "gemini": 0,
+        "google": 0
+      },
+      "source_usage": {
+        "dataset": 1,
+        "gemini": 0,
+        "google": 0
+      }
+    }
+  },
+  "227381ed-792b-483e-905d-0e10e42dd3c7": {
+    "profile": {
+      "favorite_cuisines": [],
+      "dietary_needs": [],
+      "budget": 2,
+      "budget_band_min": 1,
+      "budget_band_max": 4,
+      "flexible_prefs": {},
+      "preferred_visit_type": "visit",
+      "preferred_table_booking": "No",
+      "mood_tags": [],
+      "occasion_tags": [],
+      "saved_filters": {},
+      "updated_at": "2025-11-26T08:28:03.885512"
+    },
+    "bookmarks": [],
+    "ratings": {
+      "18439634": {
+        "rating": 4.5,
+        "updated_at": "2025-11-26T08:28:22.833788"
+      }
+    },
+    "history": [
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "cuisines": "American,Burger,Continental,Desserts",
+        "results": 4,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Wednesday",
+            "hour": 13
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "74b11110-a101-4263-8c5b-e48c29018f8b",
+        "timestamp": "2025-11-26T08:28:03.931837"
+      },
+      {
+        "type": "search",
+        "city": "Coimbatore",
+        "cuisines": "Chettinad,Ice Cream,South Indian",
+        "results": 1,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Wednesday",
+            "hour": 14
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "11f9c007-d90a-44e5-8750-ff36402b69e6",
+        "timestamp": "2025-11-26T08:44:00.652970"
+      },
+      {
+        "type": "search",
+        "city": "Coimbatore",
+        "cuisines": "Chettinad,Ice Cream,South Indian",
+        "results": 1,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Wednesday",
+            "hour": 14
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "76de8f2a-9aa3-42a6-ba35-0d4c787ee440",
+        "timestamp": "2025-11-26T08:44:16.079502"
+      },
+      {
+        "type": "search",
+        "city": "Coimbatore",
+        "cuisines": "Chettinad,South Indian",
+        "results": 1,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Wednesday",
+            "hour": 14
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "a29e624c-7e86-4fdd-b5f6-a26c4a897d0c",
+        "timestamp": "2025-11-26T08:44:29.957072"
+      },
+      {
+        "type": "search",
+        "city": "Coimbatore",
+        "cuisines": "South Indian",
+        "results": 1,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Wednesday",
+            "hour": 14
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "4aa5d7d8-889b-48b5-8869-75e4743ad65f",
+        "timestamp": "2025-11-26T08:44:40.008898"
+      },
+      {
+        "type": "search",
+        "city": "Coimbatore",
+        "results": 3,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Wednesday",
+            "hour": 14
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "cbb0424f-9398-4b99-83df-3839a3cce345",
+        "timestamp": "2025-11-26T08:45:32.498631"
+      }
+    ],
+    "interactions": [
+      {
+        "id": "222135a9-4d22-4987-9786-601751c40e4e",
+        "user_id": "227381ed-792b-483e-905d-0e10e42dd3c7",
+        "entity_id": "18439634",
+        "entity_type": "restaurant",
+        "interaction_type": "rating",
+        "value": 4.5,
+        "metadata": {
+          "restaurant_id": 18439634,
+          "name": "ECHOES Koramangala",
+          "city": "Bangalore",
+          "cuisines": "Continental, American, Italian, North Indian, Chinese, Cafe",
+          "rating": 4.7,
+          "average_cost_for_two": 950,
+          "latitude": 12.934179,
+          "longitude": 77.615797
+        },
+        "created_at": "2025-11-26T08:28:21.635401"
+      }
+    ],
+    "analytics": {
+      "cities": {
+        "bangalore": 1,
+        "coimbatore": 5
+      },
+      "filters": {
+        "dietary": 1
+      },
+      "search_modes": {
+        "dataset": 0,
+        "hybrid": 5,
+        "gemini": 1,
+        "google": 0
+      },
+      "source_usage": {
+        "dataset": 5,
+        "gemini": 1,
+        "google": 0
+      }
+    }
+  },
+  "1": {
+    "profile": {
+      "favorite_cuisines": [],
+      "dietary_needs": [],
+      "budget": 2,
+      "budget_band_min": 1,
+      "budget_band_max": 4,
+      "flexible_prefs": {},
+      "preferred_visit_type": "visit",
+      "preferred_table_booking": "No",
+      "mood_tags": [],
+      "occasion_tags": [],
+      "saved_filters": {},
+      "updated_at": "2025-11-26T11:12:48.035659"
+    },
+    "bookmarks": [
+      {
+        "bookmark_id": "128d303a-9f51-42ef-8c63-909586717d88",
+        "restaurant_id": "V. B. Bakery",
+        "name": "V. B. Bakery",
+        "city": null,
+        "cuisines": "Bakery, Snacks, Street Food",
+        "rating": 4.4,
+        "price_range": null,
+        "average_cost_for_two": null,
+        "latitude": 12.9566,
+        "longitude": 77.5779,
+        "snapshot": {
+          "restaurant_id": "V. B. Bakery",
+          "name": "V. B. Bakery",
+          "cuisines": "Bakery, Snacks, Street Food",
+          "rating": 4.4,
+          "average_cost_for_two": 250,
+          "latitude": 12.9566,
+          "longitude": 77.5779
+        },
+        "saved_at": "2025-11-26T11:13:14.246651"
+      }
+    ],
+    "ratings": {},
+    "history": [],
+    "interactions": [
+      {
+        "id": "9be1dfd5-50cc-497d-81cf-ec913f85dc2a",
+        "user_id": "1",
+        "entity_id": "V. B. Bakery",
+        "entity_type": "restaurant",
+        "interaction_type": "bookmark",
+        "value": null,
+        "metadata": {
+          "restaurant_id": "V. B. Bakery",
+          "name": "V. B. Bakery",
+          "cuisines": "Bakery, Snacks, Street Food",
+          "rating": 4.4,
+          "average_cost_for_two": 250,
+          "latitude": 12.9566,
+          "longitude": 77.5779
+        },
+        "created_at": "2025-11-26T11:13:13.813320"
+      }
+    ],
+    "analytics": {
+      "cities": {
+        "bangalore": 6
+      },
+      "filters": {},
+      "search_modes": {
+        "dataset": 0,
+        "hybrid": 3,
+        "gemini": 3,
+        "google": 0
+      },
+      "source_usage": {
+        "dataset": 3,
+        "gemini": 3,
+        "google": 0
+      }
+    }
   }
 }

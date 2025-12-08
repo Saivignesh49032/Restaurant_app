@@ -184,6 +184,15 @@ def list_history(user_id: str, limit: int = 25) -> List[Dict[str, Any]]:
         return deepcopy(record['history'][-limit:])
 
 
+def clear_history(user_id: str) -> List[Dict[str, Any]]:
+    with _LOCK:
+        data = _read_store()
+        record = _get_record(data, user_id)
+        record['history'] = []
+        _write_store(data)
+        return []
+
+
 def add_interaction(user_id: str, interaction: Dict[str, Any], limit: int = 300) -> Dict[str, Any]:
     with _LOCK:
         data = _read_store()

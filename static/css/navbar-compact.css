@@ -1,0 +1,13 @@
+/* Navbar height override - make it more compact */
+header {
+    padding: 0.25rem 0 !important;
+}
+
+header h1 {
+    font-size: 1.1rem !important;
+}
+
+nav a {
+    padding: 0.3rem 0.6rem !important;
+    font-size: 0.85rem !important;
+}

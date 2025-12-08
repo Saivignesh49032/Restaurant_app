@@ -1,12 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Tastes | Restaurant Recommender</title>
+    <title>🎯 Your Tastes | Restaurant Recommender</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar-compact.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ui-enhancements.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/feature-enhancements.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile-enhancements.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile-layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile-colors.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fun-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-toggle.css') }}">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="{{ url_for('static', filename='js/ui-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
+    
 </head>
+
 <body>
     <header>
         <div class="header-content">
@@ -14,8 +31,7 @@
             <nav>
                 <a href="/"><i class="fas fa-home"></i> Home</a>
                 <a href="/profile" class="active"><i class="fas fa-user"></i> Profile</a>
-                <a href="/map"><i class="fas fa-map-marker-alt"></i> View Map</a>
-                <button id="dark-mode-toggle" class="theme-toggle" title="Toggle Dark Mode">
+                <button id="dark-mode-toggle" class="theme-toggle" title="Toggle Dark Mode" onclick="toggleDarkMode()">
                     <i class="fas fa-moon"></i>
                 </button>
             </nav>
@@ -31,10 +47,10 @@
                         <p class="section-subtitle">Tune your dining vibes and keep favorites handy.</p>
                     </div>
                     <div class="profile-summary-card slim">
-                    <div>
-                        <p class="profile-summary-label">Personalized profile</p>
-                        <p id="profile-summary-text">Loading your saved tastes...</p>
-                    </div>
+                        <div>
+                            <p class="profile-summary-label">Personalized profile</p>
+                            <p id="profile-summary-text">Loading your saved tastes...</p>
+                        </div>
                         <div class="profile-summary-actions">
                             <button id="edit-profile-btn" type="button">
                                 <i class="fas fa-user-edit"></i> Edit Profile
@@ -103,33 +119,156 @@
 
         <section class="profile-insights reveal-on-scroll">
             <div class="personalization-widgets">
-                <div class="widget-card" id="bookmarks-widget">
+                <!-- Enhanced Saved Spots Widget -->
+                <div class="widget-card enhanced-widget" id="bookmarks-widget">
                     <div class="widget-header">
                         <h3><i class="fas fa-bookmark"></i> Saved Spots</h3>
-                        <button id="refresh-bookmarks-btn" type="button"><i class="fas fa-sync"></i></button>
+                        <div class="widget-actions">
+                            <button id="refresh-bookmarks-btn" class="btn-icon" type="button" title="Refresh">
+                                <i class="fas fa-sync"></i>
+                            </button>
+                        </div>
                     </div>
-                    <ul id="bookmarks-list" class="bookmark-list">
-                        <li class="empty-state">No bookmarks yet. Tap the bookmark icon on any card.</li>
+
+                    <!-- Search and Filter Bar -->
+                    <div class="widget-controls">
+                        <div class="search-bar">
+                            <input type="text" id="bookmark-search" class="search-input"
+                                placeholder="Search saved spots...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="filter-chips">
+                            <button class="filter-chip active" data-filter="all">All</button>
+                            <button class="filter-chip" data-filter="recent">Recent</button>
+                            <button class="filter-chip" data-filter="favorites">Favorites</button>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Bookmarks List -->
+                    <ul id="bookmarks-list" class="bookmark-list enhanced-list">
+                        <li class="empty-state">
+                            <i class="fas fa-bookmark"></i>
+                            <p>No bookmarks yet. Tap the bookmark icon on any restaurant card.</p>
+                        </li>
                     </ul>
-                    <button id="plan-itinerary-btn" type="button" class="widget-action-btn" disabled>
-                        <i class="fas fa-route"></i> Plan Food Trail
-                    </button>
+
+                    <!-- Stats Footer -->
+                    <div class="widget-footer">
+                        <span class="stat-badge">
+                            <i class="fas fa-bookmark"></i>
+                            <span id="bookmark-count">0</span> saved
+                        </span>
+                    </div>
                 </div>
-                <div class="widget-card reveal-on-scroll" id="history-widget">
+
+                <!-- Enhanced Recent Activity Widget -->
+                <div class="widget-card enhanced-widget reveal-on-scroll" id="history-widget">
                     <div class="widget-header">
                         <h3><i class="fas fa-clock"></i> Recent Activity</h3>
-                        <button id="refresh-history-btn" type="button"><i class="fas fa-sync"></i></button>
+                        <div class="widget-actions">
+                            <button id="refresh-history-btn" class="btn-icon" type="button" title="Refresh">
+                                <i class="fas fa-sync"></i>
+                            </button>
+                            <button id="clear-history-btn" class="btn-icon" type="button" title="Clear History">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
                     </div>
-                    <ul id="history-list" class="history-list">
-                        <li class="empty-state">Submit a search to build history.</li>
+
+                    <!-- Search and Filter Bar -->
+                    <div class="widget-controls">
+                        <div class="search-bar">
+                            <input type="text" id="history-search" class="search-input" placeholder="Search history...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="filter-chips">
+                            <button class="filter-chip active" data-period="all">All Time</button>
+                            <button class="filter-chip" data-period="today">Today</button>
+                            <button class="filter-chip" data-period="week">This Week</button>
+                            <button class="filter-chip" data-period="month">This Month</button>
+                        </div>
+                    </div>
+
+                    <!-- History List -->
+                    <ul id="history-list" class="history-list enhanced-list">
+                        <li class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <p>Submit a search to build history.</p>
+                        </li>
                     </ul>
+
+                    <!-- Stats Footer -->
+                    <div class="widget-footer">
+                        <span class="stat-badge">
+                            <i class="fas fa-search"></i>
+                            <span id="history-count">0</span> searches
+                        </span>
+                        <span class="stat-badge">
+                            <i class="fas fa-chart-line"></i>
+                            Most searched: <span id="most-searched">-</span>
+                        </span>
+                    </div>
                 </div>
-                <div class="widget-card" id="itinerary-widget">
+
+                <!-- Food Trail Planner Widget - Hidden (Not Fully Implemented) -->
+                <div class="widget-card enhanced-widget" id="itinerary-widget" style="display: none;">
                     <div class="widget-header">
                         <h3><i class="fas fa-map-signs"></i> Food Trail Planner</h3>
+                        <div class="widget-actions">
+                            <button id="save-trail-btn" class="btn-icon" type="button" title="Save Trail" disabled>
+                                <i class="fas fa-save"></i>
+                            </button>
+                            <button id="share-trail-btn" class="btn-icon" type="button" title="Share Trail" disabled>
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                            <button id="export-trail-btn" class="btn-icon" type="button" title="Export Trail" disabled>
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div id="itinerary-output" class="itinerary-output">
-                        <p class="empty-state">Select at least 2 bookmarks and tap "Plan Food Trail".</p>
+
+                    <!-- Trail Options -->
+                    <div class="trail-options">
+                        <label>
+                            <i class="fas fa-route"></i>
+                            <select id="trail-optimization">
+                                <option value="distance">Shortest Distance</option>
+                                <option value="rating">Highest Rated</option>
+                                <option value="custom">Custom Order</option>
+                            </select>
+                        </label>
+                        <label>
+                            <i class="fas fa-clock"></i>
+                            <input type="number" id="trail-duration" placeholder="Duration (hours)" min="1" max="12"
+                                value="3">
+                        </label>
+                    </div>
+
+                    <!-- Trail Output -->
+                    <div id="itinerary-output" class="itinerary-output enhanced-output">
+                        <div class="empty-state">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <p>Select at least 2 bookmarks and tap "Plan Food Trail".</p>
+                            <small>We'll create an optimized route for your food adventure!</small>
+                        </div>
+                    </div>
+
+                    <!-- Trail Stats -->
+                    <div class="widget-footer trail-stats" id="trail-stats" style="display: none;">
+                        <span class="stat-badge">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span id="trail-stops">0</span> stops
+                        </span>
+                        <span class="stat-badge">
+                            <i class="fas fa-road"></i>
+                            <span id="trail-distance">0</span> km
+                        </span>
+                        <span class="stat-badge">
+                            <i class="fas fa-clock"></i>
+                            <span id="trail-time">0</span> hrs
+                        </span>
                     </div>
                 </div>
             </div>
@@ -208,7 +347,9 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='js/enhancements.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/profile-functionality.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
-</html>
 
+</html>
