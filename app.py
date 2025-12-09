@@ -15,7 +15,7 @@ from sklearn.pipeline import Pipeline  # We need this for the helper function
 from sklearn.preprocessing import StandardScaler, OneHotEncoder  # We need these for the helper function
 from dotenv import load_dotenv
 from flask_login import LoginManager, login_required, current_user
-from models import db, User, Review
+from models import db, User, Review, GeminiRestaurant, SearchCache
 
 from personalization_store import (
     add_bookmark,
@@ -92,6 +92,132 @@ app.register_blueprint(review_bp)
 with app.app_context():
     db.create_all()
     print("✅ Database initialized successfully!")
+
+# Helper functions for Gemini data persistence
+# Add these to app.py after imports
+
+from models import GeminiRestaurant, SearchCache
+import json
+
+def save_gemini_restaurant(restaurant_data):
+    """Save or update a Gemini restaurant in the database."""
+    try:
+        # Generate restaurant_id from name if not present
+        rest_id = restaurant_data.get('id') or restaurant_data.get('Restaurant ID')
+        if not rest_id:
+            name = restaurant_data.get('name') or restaurant_data.get('Restaurant Name', '')
+            rest_id = name.replace(' ', '_').replace("'", '').lower()
+        
+        # Check if restaurant already exists
+        existing = GeminiRestaurant.query.filter_by(restaurant_id=rest_id).first()
+        
+        # Extract cuisines
+        cuisines = restaurant_data.get('cuisines', [])
+        if isinstance(cuisines, list):
+            cuisines_str = ', '.join(cuisines)
+        else:
+            cuisines_str = str(cuisines)
+        
+        if existing:
+            # Update existing
+            existing.name = restaurant_data.get('name') or restaurant_data.get('Restaurant Name', existing.name)
+            existing.city = restaurant_data.get('city') or restaurant_data.get('City', existing.city)
+            existing.address = restaurant_data.get('address', existing.address)
+            existing.rating = restaurant_data.get('rating') or restaurant_data.get('Aggregate rating', existing.rating)
+            existing.cuisines = cuisines_str
+            existing.cost_for_two = restaurant_data.get('cost_for_two') or restaurant_data.get('Average Cost for two', existing.cost_for_two)
+            existing.latitude = restaurant_data.get('latitude') or restaurant_data.get('Latitude', existing.latitude)
+            existing.longitude = restaurant_data.get('longitude') or restaurant_data.get('Longitude', existing.longitude)
+            existing.phone = restaurant_data.get('phone', existing.phone)
+            existing.hours = restaurant_data.get('hours', existing.hours)
+            existing.features = json.dumps(restaurant_data.get('features', [])) if restaurant_data.get('features') else existing.features
+            existing.description = restaurant_data.get('description', existing.description)
+            existing.place_id = restaurant_data.get('place_id', existing.place_id)
+            existing.updated_at = datetime.utcnow()
+            db.session.commit()
+            return existing
+        else:
+            # Create new
+            new_restaurant = GeminiRestaurant(
+                restaurant_id=rest_id,
+                name=restaurant_data.get('name') or restaurant_data.get('Restaurant Name', ''),
+                city=restaurant_data.get('city') or restaurant_data.get('City', ''),
+                address=restaurant_data.get('address'),
+                rating=restaurant_data.get('rating') or restaurant_data.get('Aggregate rating'),
+                cuisines=cuisines_str,
+                cost_for_two=restaurant_data.get('cost_for_two') or restaurant_data.get('Average Cost for two'),
+                latitude=restaurant_data.get('latitude') or restaurant_data.get('Latitude'),
+                longitude=restaurant_data.get('longitude') or restaurant_data.get('Longitude'),
+                phone=restaurant_data.get('phone'),
+                hours=restaurant_data.get('hours'),
+                features=json.dumps(restaurant_data.get('features', [])) if restaurant_data.get('features') else None,
+                description=restaurant_data.get('description'),
+                place_id=restaurant_data.get('place_id')
+            )
+            db.session.add(new_restaurant)
+            db.session.commit()
+            return new_restaurant
+    except Exception as e:
+        print(f"Error saving Gemini restaurant: {e}")
+        db.session.rollback()
+        return None
+
+def get_search_from_cache(city, cuisines=None, filters=None):
+    """Check if search results exist in cache."""
+    try:
+        search_key = SearchCache.generate_key(city, cuisines, filters)
+        cache_entry = SearchCache.query.filter_by(search_key=search_key).first()
+        
+        if cache_entry:
+            # Get restaurant IDs
+            result_ids = cache_entry.result_ids.split(',') if cache_entry.result_ids else []
+            
+            # Fetch restaurants from database
+            restaurants = []
+            for rest_id in result_ids:
+                rest = GeminiRestaurant.query.filter_by(restaurant_id=rest_id.strip()).first()
+                if rest:
+                    restaurants.append(rest.to_dict())
+            
+            if restaurants:
+                print(f"✅ Cache HIT: Found {len(restaurants)} restaurants for {city}")
+                return restaurants
+        
+        print(f"⚠️ Cache MISS: No cached results for {city}")
+        return None
+    except Exception as e:
+        print(f"Error checking search cache: {e}")
+        return None
+
+def save_search_to_cache(city, cuisines, filters, result_ids):
+    """Save search results to cache."""
+    try:
+        search_key = SearchCache.generate_key(city, cuisines, filters)
+        
+        # Check if cache entry exists
+        existing = SearchCache.query.filter_by(search_key=search_key).first()
+        
+        result_ids_str = ','.join(result_ids)
+        
+        if existing:
+            existing.result_ids = result_ids_str
+            existing.created_at = datetime.utcnow()
+        else:
+            new_cache = SearchCache(
+                search_key=search_key,
+                city=city,
+                cuisines=','.join(cuisines) if cuisines else None,
+                filters=json.dumps(filters) if filters else None,
+                result_ids=result_ids_str
+            )
+            db.session.add(new_cache)
+        
+        db.session.commit()
+        print(f"✅ Saved search cache for {city}")
+    except Exception as e:
+        print(f"Error saving search cache: {e}")
+        db.session.rollback()
+
 
 def _ensure_user_id():
     if current_user.is_authenticated:
@@ -1135,10 +1261,13 @@ def api_predict_rating():
         return jsonify({"error": str(e)}), 500
 
 # --- Gemini API Routes ---
+# COMPLETE UPDATED GEMINI SEARCH ENDPOINT WITH CACHING
+# Replace the existing @app.route('/api/gemini/search', methods=['POST']) function with this
+
 @app.route('/api/gemini/search', methods=['POST'])
 @login_required
 def api_gemini_search():
-    """API endpoint for Gemini-powered restaurant search."""
+    """API endpoint for Gemini-powered restaurant search with database caching."""
     user_id = _ensure_user_id()
     if not GEMINI_ENABLED or not is_gemini_available():
         # Fallback to Google Places if Gemini not available
@@ -1191,7 +1320,26 @@ def api_gemini_search():
         if not city:
             return jsonify({"error": "City is required"}), 400
         
-        # Search using Gemini
+        # STEP 1: Check database cache first
+        print(f"🔍 Checking cache for: {city}, cuisines: {cuisines}")
+        cached_results = get_search_from_cache(city, cuisines, {'price_range': price_range, 'visit_type': visit_type})
+        
+        if cached_results:
+            # Cache HIT - return saved results instantly
+            print(f"✅ Returning {len(cached_results)} cached results")
+            session['recommendations'] = cached_results
+            session['search_type'] = 'gemini-cached'
+            add_history_event(user_id, {
+                "type": "search",
+                "city": city,
+                "results": len(cached_results),
+                "context": context,
+                "mode": "gemini-cached"
+            })
+            return jsonify(cached_results)
+        
+        # STEP 2: Cache MISS - call Gemini API
+        print(f"⚠️ Cache miss - calling Gemini API for {city}")
         results = search_restaurants_gemini(
             city=city,
             cuisines=cuisines,
@@ -1212,8 +1360,29 @@ def api_gemini_search():
             if results:
                 session['search_type'] = 'google'
         
-        # Store in session for map view
+        # STEP 3: Save results to database
         if results:
+            result_ids = []
+            
+            for i, restaurant in enumerate(results):
+                # Ensure each result has an ID
+                if 'Restaurant ID' not in restaurant and 'id' not in restaurant:
+                    name = restaurant.get('name') or restaurant.get('Restaurant Name', f'restaurant_{i}')
+                    restaurant['id'] = name.replace(' ', '_').replace("'", '').lower()
+                    restaurant['Restaurant ID'] = restaurant['id']
+                
+                # Save restaurant to database
+                saved = save_gemini_restaurant(restaurant)
+                if saved:
+                    result_ids.append(saved.restaurant_id)
+                    print(f"💾 Saved: {saved.name}")
+            
+            # Save search to cache
+            if result_ids:
+                save_search_to_cache(city, cuisines, {'price_range': price_range, 'visit_type': visit_type}, result_ids)
+            
+            # City filter temporarily disabled - Gemini already filters by city
+            
             session['recommendations'] = results
             session['search_type'] = 'gemini'
             record_search_analytics(user_id, city, {
@@ -1228,20 +1397,12 @@ def api_gemini_search():
                 "mode": "gemini"
             })
         
-        # Ensure each result has an ID for frontend navigation
-        if results:
-            for i, restaurant in enumerate(results):
-                if 'Restaurant ID' not in restaurant and 'id' not in restaurant:
-                    # Generate a unique ID from name
-                    name = restaurant.get('name') or restaurant.get('Restaurant Name', f'restaurant_{i}')
-                    restaurant['id'] = name.replace(' ', '_').replace("'", '').lower()
-                    restaurant['Restaurant ID'] = restaurant['id']
-        
         return jsonify(results)
         
     except Exception as e:
         print(f"Error in Gemini search: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/gemini/details', methods=['POST'])
 def api_gemini_details():

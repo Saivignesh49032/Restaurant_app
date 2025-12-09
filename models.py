@@ -146,3 +146,79 @@ def init_db(app):
     with app.app_context():
         db.create_all()
         print("✅ Database tables created successfully")
+
+
+class GeminiRestaurant(db.Model):
+    """Store restaurants fetched from Gemini API permanently."""
+    __tablename__ = 'gemini_restaurants'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    restaurant_id = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(200), nullable=False, index=True)
+    city = db.Column(db.String(100), nullable=False, index=True)
+    address = db.Column(db.Text)
+    rating = db.Column(db.Float)
+    cuisines = db.Column(db.Text)  # Comma-separated
+    cost_for_two = db.Column(db.String(50))
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    phone = db.Column(db.String(50))
+    hours = db.Column(db.Text)
+    features = db.Column(db.Text)  # JSON string
+    description = db.Column(db.Text)
+    place_id = db.Column(db.String(200))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        """Convert to dictionary format compatible with search results."""
+        return {
+            'Restaurant ID': self.restaurant_id,
+            'id': self.restaurant_id,
+            'Restaurant Name': self.name,
+            'name': self.name,
+            'City': self.city,
+            'city': self.city,
+            'address': self.address,
+            'Aggregate rating': self.rating,
+            'rating': self.rating,
+            'Cuisines': self.cuisines,
+            'cuisines': self.cuisines.split(',') if self.cuisines else [],
+            'Average Cost for two': self.cost_for_two,
+            'cost_for_two': self.cost_for_two,
+            'Latitude': self.latitude,
+            'latitude': self.latitude,
+            'Longitude': self.longitude,
+            'longitude': self.longitude,
+            'phone': self.phone,
+            'hours': self.hours,
+            'features': self.features,
+            'description': self.description,
+            'place_id': self.place_id
+        }
+
+class SearchCache(db.Model):
+    """Cache search results to avoid redundant API calls."""
+    __tablename__ = 'search_cache'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    search_key = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    city = db.Column(db.String(100), nullable=False)
+    cuisines = db.Column(db.Text)
+    filters = db.Column(db.Text)  # JSON string
+    result_ids = db.Column(db.Text)  # Comma-separated restaurant IDs
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    @staticmethod
+    def generate_key(city, cuisines=None, filters=None):
+        """Generate a unique key for search parameters."""
+        import hashlib
+        import json
+        
+        key_data = {
+            'city': city.lower().strip(),
+            'cuisines': sorted(cuisines) if cuisines else [],
+            'filters': filters or {}
+        }
+        key_string = json.dumps(key_data, sort_keys=True)
+        return hashlib.md5(key_string.encode()).hexdigest()
