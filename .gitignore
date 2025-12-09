@@ -4,21 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
 # Virtual Environment
 venv/
@@ -44,13 +29,10 @@ instance/
 .webassets-cache
 flask_session/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb_checkpoints/
-
 # Database
 *.db
 *.sqlite3
+*.sqlite
 
 # OS generated files
 .DS_Store
@@ -60,21 +42,23 @@ flask_session/
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Logs and databases
+# Logs
 *.log
-*.sqlite
 
 # Environment variables
 .env
 .env.local
 .env.*.local
 
-# Model files and large data (comment out if you want to include these)
-# *.joblib
-# *.csv
-# *.h5
-# *.pkl
+# Temporary Python scripts (cleanup scripts)
+fix_*.py
+add_*.py
+remove_*.py
+update_*.py
+generate_*.py
+final_*.py
 
 # Coverage reports
 htmlcov/
@@ -95,12 +79,7 @@ coverage.xml
 .dmypy.json
 dmypy.json
 
-# Pylint
-.pylintrc
-
 # Distribution / packaging
-.Python
-env/
 build/
 develop-eggs/
 dist/
@@ -116,3 +95,14 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Word documents (temporary)
+*.docx
+*.doc
+
+# Gemini brain artifacts (not part of project)
+.gemini/

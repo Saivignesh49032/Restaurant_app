@@ -84,7 +84,9 @@ def load_user(user_id):
 
 # Register authentication blueprint
 from auth import auth_bp
+from api import review_bp
 app.register_blueprint(auth_bp)
+app.register_blueprint(review_bp)
 
 # Create database tables
 with app.app_context():
@@ -1226,6 +1228,15 @@ def api_gemini_search():
                 "mode": "gemini"
             })
         
+        # Ensure each result has an ID for frontend navigation
+        if results:
+            for i, restaurant in enumerate(results):
+                if 'Restaurant ID' not in restaurant and 'id' not in restaurant:
+                    # Generate a unique ID from name
+                    name = restaurant.get('name') or restaurant.get('Restaurant Name', f'restaurant_{i}')
+                    restaurant['id'] = name.replace(' ', '_').replace("'", '').lower()
+                    restaurant['Restaurant ID'] = restaurant['id']
+        
         return jsonify(results)
         
     except Exception as e:
@@ -1448,6 +1459,75 @@ def api_recommend_hybrid():
         return jsonify({"error": str(e)}), 500
 
 # --- Restaurant Details Route ---
+
+
+
+
+# Flexible route for restaurant details (handles both int and string IDs)
+@app.route('/restaurant/<path:restaurant_id>')
+def restaurant_details_any(restaurant_id):
+    """Handle restaurant details for any ID type."""
+    # Try to convert to int
+    try:
+        numeric_id = int(restaurant_id)
+        return restaurant_details(numeric_id)
+    except (ValueError, TypeError):
+        # String ID - likely from Gemini, extract name and try to get details
+        import urllib.parse
+        # Decode and convert underscores back to spaces
+        restaurant_name = urllib.parse.unquote(str(restaurant_id)).replace('_', ' ')
+        
+        # Try to get details from Gemini
+        if GEMINI_ENABLED and is_gemini_available():
+            try:
+                # Extract city from the name if it's in parentheses
+                city = "India"
+                if '(' in restaurant_name and ')' in restaurant_name:
+                    parts = restaurant_name.split('(')
+                    restaurant_name = parts[0].strip()
+                    city_part = parts[1].split(')')[0].strip()
+                    city = city_part if city_part else "India"
+                
+                gemini_details = get_restaurant_details_gemini(restaurant_name, city)
+                
+                if gemini_details:
+                    # Create restaurant data from Gemini response
+                    restaurant_data = {
+                        'Restaurant Name': gemini_details.get('name', restaurant_name),
+                        'Restaurant ID': restaurant_id,
+                        'City': gemini_details.get('address', city),
+                        'Aggregate rating': gemini_details.get('rating', 0),
+                        'Cuisines': ', '.join(gemini_details.get('cuisines', [])) if isinstance(gemini_details.get('cuisines'), list) else gemini_details.get('cuisines', 'Not specified'),
+                        'Average Cost for two': gemini_details.get('cost_for_two', 'N/A'),
+                        'Latitude': gemini_details.get('latitude'),
+                        'Longitude': gemini_details.get('longitude'),
+                    }
+                    
+                    return render_template(
+                        'restaurant_details.html',
+                        restaurant=restaurant_data,
+                        gemini_details=gemini_details,
+                        gemini_available=True
+                    )
+            except Exception as e:
+                print(f"Error fetching Gemini details for {restaurant_name}: {e}")
+        
+        # Fallback: create basic restaurant data
+        restaurant_data = {
+            'Restaurant Name': restaurant_name,
+            'Restaurant ID': restaurant_id,
+            'City': 'Unknown',
+            'Aggregate rating': 0,
+            'Cuisines': 'Not specified',
+        }
+        
+        return render_template(
+            'restaurant_details.html',
+            restaurant=restaurant_data,
+            gemini_details=None,
+            gemini_available=False
+        )
+
 @app.route('/restaurant/<int:restaurant_id>')
 def restaurant_details(restaurant_id):
     """Display detailed information about a restaurant."""

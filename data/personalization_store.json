@@ -1144,18 +1144,18 @@
     ],
     "analytics": {
       "cities": {
-        "bangalore": 6
+        "bangalore": 23
       },
       "filters": {},
       "search_modes": {
         "dataset": 0,
-        "hybrid": 3,
-        "gemini": 3,
+        "hybrid": 6,
+        "gemini": 17,
         "google": 0
       },
       "source_usage": {
-        "dataset": 3,
-        "gemini": 3,
+        "dataset": 6,
+        "gemini": 17,
         "google": 0
       }
     }

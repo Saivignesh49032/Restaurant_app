@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/details_page.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/review-analysis.css') }}">
 </head>
 
 <body>
@@ -238,6 +239,11 @@
             </section>
             {% endif %}
         </div>
+
+            <!-- Review Analysis Section -->
+            <section class="review-analysis-wrapper">
+                <div id="review-analysis-container"></div>
+            </section>
     </main>
 
     <script id="restaurant-data" type="application/json">
@@ -249,6 +255,20 @@
     </script>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='js/details.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/review-analysis.js') }}"></script>
+    <script>
+        // Initialize review analysis - use restaurant ID or name
+        document.addEventListener('DOMContentLoaded', function() {
+            const restaurantId = '{{ restaurant.get("Restaurant ID") or restaurant.get("id") or (gemini_details.get("place_id") if gemini_details else "") or restaurant.get("Restaurant Name", "").replace(" ", "_") }}';
+            const restaurantName = '{{ restaurant.get("Restaurant Name") or restaurant.get("name") or "Restaurant" }}';
+            const city = '{{ restaurant.get("City") or restaurant.get("city") or "" }}';
+            
+            if (restaurantId && restaurantName) {
+                reviewAnalysis.init(restaurantId, restaurantName, city);
+            }
+        });
+    </script>
 </body>
 
 </html>

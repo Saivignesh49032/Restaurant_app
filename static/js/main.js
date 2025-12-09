@@ -1003,6 +1003,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const recoForm = document.getElementById('reco-form');
     const resultsList = document.getElementById('results-list');
+
+
     const visitTypeRadios = document.getElementsByName('visitType');
     const tableBookingGroup = document.getElementById('table-booking-group');
     const viewAllMapBtn = document.getElementById('view-all-map');
@@ -1218,6 +1220,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 currentRestaurants = await response.json();
+                // Save results to sessionStorage for persistence
+                sessionStorage.setItem('lastSearchResults', JSON.stringify(currentRestaurants));
+                sessionStorage.setItem('lastSearchParams', JSON.stringify(userPreferences));
+
 
                 // Restore button state
                 submitBtn.innerHTML = originalBtnText;
@@ -1305,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const booking = r['Has Table booking'] === 1 || (r['features'] && r['features'].includes('Table Booking'));
             const latitude = r['Latitude'] || r['latitude'];
             const longitude = r['Longitude'] || r['longitude'];
-            const restaurantId = r['Restaurant ID'] || r['id'] || null;
+            const restaurantId = r['Restaurant ID'] || r['id'] || r['place_id'] || restaurantName.replace(/[^a-zA-Z0-9]/g, '_');
             const hasCoordinates = latitude !== undefined && latitude !== null && latitude !== '' &&
                 longitude !== undefined && longitude !== null && longitude !== '';
             const directionsUrl = hasCoordinates
@@ -1487,4 +1493,54 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProfile(true);
     loadBookmarks();
     loadHistory();
+    
+    // Restore last search results if available (at the end after everything is initialized)
+    setTimeout(() => {
+        const savedResults = sessionStorage.getItem('lastSearchResults');
+        if (savedResults && resultsList) {
+            try {
+                const restoredRestaurants = JSON.parse(savedResults);
+                if (restoredRestaurants.length > 0) {
+                    currentRestaurants = restoredRestaurants;
+                    displayResults(currentRestaurants);
+                    if (viewAllMapBtn) viewAllMapBtn.classList.remove('hidden');
+                    console.log('✅ Restored', currentRestaurants.length, 'search results');
+                }
+            } catch (e) {
+                console.error('Error restoring results:', e);
+            }
+        }
+    }, 100); // Small delay to ensure everything is ready
 });
+
+// Make restaurant cards clickable - navigate to details page
+document.addEventListener('DOMContentLoaded', function() {
+    const resultsList = document.getElementById('results-list');
+    
+    if (resultsList) {
+        // Use event delegation for dynamically added cards
+        resultsList.addEventListener('click', function(e) {
+            const card = e.target.closest('.restaurant-card');
+            
+            // Only trigger if clicking the card itself, not buttons
+            if (card && !e.target.closest('button')) {
+                const viewDetailsBtn = card.querySelector('.view-details-btn');
+                if (viewDetailsBtn) {
+                    viewDetailsBtn.click();
+                }
+            }
+        });
+    }
+});
+
+
+// Helper function to view restaurant details (for Gemini results without IDs)
+function viewRestaurantDetails(name, city, restaurantData) {
+    // Store restaurant data in sessionStorage
+    sessionStorage.setItem('tempRestaurantData', JSON.stringify(restaurantData));
+    
+    // Navigate to a special details page
+    window.location.href = `/restaurant-details?name=${encodeURIComponent(name)}&city=${encodeURIComponent(city)}`;
+}
+
+

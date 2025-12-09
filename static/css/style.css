@@ -1224,3 +1224,18 @@ select:focus {
         text-align: center;
     }
 }
+
+/* Make cards look clickable */
+.restaurant-card {
+    cursor: pointer !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.restaurant-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3) !important;
+}
+
+.restaurant-card button {
+    cursor: pointer !important;
+}
