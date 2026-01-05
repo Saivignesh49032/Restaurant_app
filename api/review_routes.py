@@ -247,3 +247,101 @@ def get_cache_status(place_id):
             'success': False,
             'error': str(e)
         }), 500
+
+
+@review_bp.route('/submit', methods=['POST'])
+def submit_review():
+    """
+    Submit a new restaurant review
+    
+    Request JSON:
+    {
+        "restaurant_id": "123",
+        "restaurant_name": "Pizza Palace",
+        "city": "Bangalore",
+        "rating": 5,
+        "review_text": "Great food and service!"
+    }
+    """
+    try:
+        from flask_login import current_user
+        from models import db, Review
+        
+        # Check if user is logged in
+        if not current_user.is_authenticated:
+            return jsonify({
+                'success': False,
+                'error': 'Please login to submit a review'
+            }), 401
+        
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['restaurant_id', 'restaurant_name', 'rating', 'review_text']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'error': f'Missing required field: {field}'
+                }), 400
+        
+        # Validate rating
+        rating = int(data.get('rating'))
+        if rating < 1 or rating > 5:
+            return jsonify({
+                'success': False,
+                'error': 'Rating must be between 1 and 5'
+            }), 400
+        
+        # Validate review text length
+        review_text = data.get('review_text', '').strip()
+        if len(review_text) < 20:
+            return jsonify({
+                'success': False,
+                'error': 'Review must be at least 20 characters'
+            }), 400
+        
+        if len(review_text) > 1000:
+            return jsonify({
+                'success': False,
+                'error': 'Review must be less than 1000 characters'
+            }), 400
+        
+        # Check if user already reviewed this restaurant
+        existing_review = Review.query.filter_by(
+            user_id=current_user.id,
+            restaurant_id=str(data.get('restaurant_id'))
+        ).first()
+        
+        if existing_review:
+            # Update existing review
+            existing_review.rating = rating
+            existing_review.review_text = review_text
+            existing_review.updated_at = datetime.utcnow()
+            message = 'Review updated successfully!'
+        else:
+            # Create new review
+            new_review = Review(
+                user_id=current_user.id,
+                restaurant_id=str(data.get('restaurant_id')),
+                restaurant_name=data.get('restaurant_name'),
+                city=data.get('city', 'Unknown'),
+                rating=rating,
+                review_text=review_text
+            )
+            db.session.add(new_review)
+            message = 'Review submitted successfully!'
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': message
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

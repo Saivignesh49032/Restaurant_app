@@ -1121,7 +1121,486 @@
       }
     ],
     "ratings": {},
-    "history": [],
+    "history": [
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Tuesday",
+            "hour": 12
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "7299fdfd-a4d5-4b9f-b4e0-708d3b149e15",
+        "timestamp": "2025-12-09T07:16:09.139768"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "cuisines": "South Indian",
+        "results": 1,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Friday",
+            "hour": 15
+          },
+          "weather": {
+            "summary": "Sunny",
+            "temp_c": 26.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "93f76497-a533-45ed-baaf-a41ca49890d6",
+        "timestamp": "2025-12-12T10:22:38.002356"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Friday",
+            "hour": 15
+          },
+          "weather": {
+            "summary": "Sunny",
+            "temp_c": 26.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "e04648cf-953f-4446-86fa-ff3b0f1cabcb",
+        "timestamp": "2025-12-12T10:22:51.809525"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Friday",
+            "hour": 15
+          },
+          "weather": {
+            "summary": "Sunny",
+            "temp_c": 26.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "14890093-b9a9-460d-8b7c-562d0900b7cc",
+        "timestamp": "2025-12-12T10:23:48.736162"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "evening",
+            "weekday": "Friday",
+            "hour": 16
+          },
+          "weather": {
+            "summary": "Sunny",
+            "temp_c": 26.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "ff7aa082-6349-4f55-8a6d-4e3dce3bd8f9",
+        "timestamp": "2025-12-12T10:36:56.624078"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "evening",
+            "weekday": "Sunday",
+            "hour": 18
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "0299d945-4ab8-4499-979c-d56acc153365",
+        "timestamp": "2025-12-14T13:04:57.912183"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "cuisines": "Pizza",
+        "results": 1,
+        "context": {
+          "time": {
+            "segment": "late-night",
+            "weekday": "Sunday",
+            "hour": 21
+          },
+          "weather": {
+            "summary": "Haze",
+            "temp_c": 20.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "9d0373aa-e6ca-4065-8535-7fba0869d96d",
+        "timestamp": "2025-12-14T15:44:17.585699"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "late-night",
+            "weekday": "Sunday",
+            "hour": 21
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "c1394b3d-2357-407a-9b26-44642b5784c7",
+        "timestamp": "2025-12-14T15:55:59.004997"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "late-night",
+            "weekday": "Sunday",
+            "hour": 21
+          },
+          "weather": {
+            "summary": "Haze",
+            "temp_c": 20.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "50456dad-2e89-4329-a92e-9c1f3a51595b",
+        "timestamp": "2025-12-14T15:57:51.333798"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "late-night",
+            "weekday": "Sunday",
+            "hour": 22
+          },
+          "weather": {
+            "summary": "Haze",
+            "temp_c": 18.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "d73ca008-9f0f-4394-889e-7082ba55ef67",
+        "timestamp": "2025-12-14T17:28:05.882869"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "late-night",
+            "weekday": "Sunday",
+            "hour": 23
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "6a989dc9-e3be-43b5-bab7-11ea1d5b86d4",
+        "timestamp": "2025-12-14T17:33:32.846937"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "breakfast",
+            "weekday": "Monday",
+            "hour": 7
+          },
+          "weather": {
+            "summary": "Clear",
+            "temp_c": 14.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "71ad3622-bfee-4648-8629-07e276bb8506",
+        "timestamp": "2025-12-15T01:34:33.239480"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "breakfast",
+            "weekday": "Monday",
+            "hour": 7
+          },
+          "weather": {
+            "summary": "Clear",
+            "temp_c": 14.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "50c0bcb2-924b-4cdd-9cec-e038aabf0f1e",
+        "timestamp": "2025-12-15T01:44:29.888787"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "cuisines": "South Indian",
+        "results": 1,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Friday",
+            "hour": 11
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "hybrid-dataset",
+        "id": "a99f8f9d-ff7f-4443-9b72-8268de11b237",
+        "timestamp": "2025-12-19T05:41:36.923665"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Friday",
+            "hour": 11
+          },
+          "weather": {
+            "summary": "Haze",
+            "temp_c": 19.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "d2352e24-5432-4a0c-93f0-ce8da1c999ac",
+        "timestamp": "2025-12-19T05:42:29.532239"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Friday",
+            "hour": 11
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "58367eb2-98ed-490e-8c35-5e189c16540c",
+        "timestamp": "2025-12-19T05:43:43.921113"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "evening",
+            "weekday": "Monday",
+            "hour": 19
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "4430d62b-d50a-43a7-9da7-bd2525e392ec",
+        "timestamp": "2025-12-22T13:45:47.097443"
+      },
+      {
+        "type": "search",
+        "city": "Chennai",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "evening",
+            "weekday": "Monday",
+            "hour": 19
+          },
+          "weather": {
+            "summary": "Unknown",
+            "temp_c": null,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini",
+        "id": "9a127cdd-a28b-4ff2-b252-e997cbba259d",
+        "timestamp": "2025-12-22T14:13:49.510767"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Monday",
+            "hour": 12
+          },
+          "weather": {
+            "summary": "Sunny",
+            "temp_c": 23.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "3d1bfe4d-38cf-41e4-82fc-f63d001cbb72",
+        "timestamp": "2026-01-05T06:57:34.541304"
+      }
+    ],
     "interactions": [
       {
         "id": "9be1dfd5-50cc-497d-81cf-ec913f85dc2a",
@@ -1144,18 +1623,19 @@
     ],
     "analytics": {
       "cities": {
-        "bangalore": 34
+        "bangalore": 43,
+        "chennai": 1
       },
       "filters": {},
       "search_modes": {
         "dataset": 0,
-        "hybrid": 6,
-        "gemini": 28,
+        "hybrid": 9,
+        "gemini": 35,
         "google": 0
       },
       "source_usage": {
-        "dataset": 6,
-        "gemini": 28,
+        "dataset": 9,
+        "gemini": 35,
         "google": 0
       }
     }

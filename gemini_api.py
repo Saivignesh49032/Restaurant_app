@@ -25,23 +25,50 @@ class GeminiRestaurantSearch:
         self.model = None
         if GEMINI_API_KEY:
             try:
-                preferred_models = [
-                    "models/gemini-flash-latest",
-                    "models/gemini-pro-latest",
-    "models/gemini-2.5-flash",
-    "models/gemini-2.5-pro"
-                ]
-                for model_name in preferred_models:
-                    try:
-                        self.model = genai.GenerativeModel(model_name)
-                        print(f"Initialized Gemini model: {model_name}")
-                        break
-                    except Exception as model_error:
-                        print(f"Failed to initialize Gemini model '{model_name}': {model_error}")
+                # First, try to list available models
+                print("🔍 Listing available Gemini models...")
+                try:
+                    available_models = genai.list_models()
+                    # Filter models that support generateContent
+                    compatible_models = [
+                        m.name for m in available_models 
+                        if 'generateContent' in m.supported_generation_methods
+                    ]
+                    print(f"📋 Found {len(compatible_models)} compatible models")
+                    for model_name in compatible_models[:5]:  # Show first 5
+                        print(f"   - {model_name}")
+                    
+                    # Try to use the first compatible model
+                    if compatible_models:
+                        # Prefer flash models for speed
+                        flash_models = [m for m in compatible_models if 'flash' in m.lower()]
+                        model_to_use = flash_models[0] if flash_models else compatible_models[0]
+                        
+                        self.model = genai.GenerativeModel(model_to_use)
+                        print(f"✅ Initialized Gemini model: {model_to_use}")
+                    else:
+                        raise RuntimeError("No compatible models found")
+                        
+                except Exception as list_error:
+                    print(f"⚠️  Could not list models: {list_error}")
+                    # Fallback to trying known model names without 'models/' prefix
+                    fallback_models = [
+                        "gemini-pro",
+                        "gemini-1.5-pro-latest",
+                        "gemini-1.0-pro"
+                    ]
+                    for model_name in fallback_models:
+                        try:
+                            self.model = genai.GenerativeModel(model_name)
+                            print(f"✅ Initialized Gemini model (fallback): {model_name}")
+                            break
+                        except Exception as model_error:
+                            print(f"⚠️  Failed to initialize '{model_name}': {model_error}")
+                    
                 if self.model is None:
                     raise RuntimeError("No compatible Gemini model could be initialized")
             except Exception as e:
-                print(f"Error initializing Gemini model: {e}")
+                print(f"❌ Error initializing Gemini model: {e}")
                 self.model = None
 
     def is_available(self) -> bool:
@@ -192,9 +219,9 @@ Return ONLY valid JSON array (no markdown) where each object contains:
 
         prompt += f"""
 
-IMPORTANT: Provide REAL, EXISTING restaurants in {city}, India with accurate, up-to-date information.
+IMPORTANT: Provide REAL, EXISTING restaurants in {city}, India with COMPLETE, accurate information.
 
-Return ONLY valid JSON array (no markdown, no commentary). The array must contain {max_results} objects or fewer, each with these keys:
+Return ONLY valid JSON array (no markdown, no commentary). The array must contain {max_results} objects or fewer, each with COMPLETE details:
 {{
     "name": "Restaurant Name",
     "cuisines": ["Cuisine1", "Cuisine2"],
@@ -204,19 +231,33 @@ Return ONLY valid JSON array (no markdown, no commentary). The array must contai
     "address": "Complete street address with area, {city}, India",
     "latitude": 12.9716,
     "longitude": 77.5946,
-    "description": "Two to three sentences describing ambiance, specialties, and why people visit",
-    "features": ["Online Delivery", "Table Booking", "Wi-Fi", "Parking"],
+    "description": "Detailed 2-3 sentence description covering ambiance, specialties, and why people visit",
+    "features": ["Online Delivery", "Table Booking", "Wi-Fi", "Parking", "Outdoor Seating", "Live Music"],
     "cost_for_two": 1200,
     "phone": "+91 12345 67890",
-    "opening_hours": "10:00 AM - 11:00 PM"
+    "opening_hours": "10:00 AM - 11:00 PM",
+    "specialties": ["Signature dish 1", "Signature dish 2", "Popular item 3"],
+    "dietary_options": ["Vegetarian", "Vegan", "Gluten-Free"],
+    "ambiance": "casual/romantic/family-friendly/fine-dining",
+    "parking": "available/not available/valet",
+    "wifi": true,
+    "outdoor_seating": false,
+    "accepts_cards": true,
+    "delivery_time": "30-45 mins"
 }}
 
 CRITICAL REQUIREMENTS:
-- Only include restaurants with ratings of 4.0 or higher
+- Prefer restaurants with ratings of 3.5 or higher (but include lower if needed to reach {max_results} results)
 - Each restaurant must be located in or very near {city}, India (use accurate coordinates)
-- Include detailed descriptions (minimum 2 sentences)
-- Ensure price_range matches the requested range; if no exact match is available, skip that restaurant
+- Include ALL fields for EVERY restaurant - this is a SINGLE comprehensive request
+- Provide detailed descriptions (minimum 2 sentences covering ambiance and specialties)
+- List actual signature dishes and specialties
+- If price_range is specified, prefer matching restaurants but include others if needed
+- Include accurate phone numbers and opening hours when available
 - Return only valid JSON (no trailing commas or additional text)
+- IMPORTANT: Return at least {max_results} restaurants if they exist in {city}
+
+This is the ONLY request for these restaurants - provide COMPLETE information now to avoid follow-up queries.
 """
         return prompt
 

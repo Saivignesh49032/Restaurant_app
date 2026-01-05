@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/review-analysis.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/review-submission.css') }}">
 </head>
 
 <body>
@@ -240,35 +241,82 @@
             {% endif %}
         </div>
 
-            <!-- Review Analysis Section -->
-            <section class="review-analysis-wrapper">
-                <div id="review-analysis-container"></div>
-            </section>
-    </main>
+        <!-- Review Analysis Section -->
+        <section class="review-analysis-wrapper">
+            <div id="review-analysis-container"></div>
+        </section>
+        <!-- Review Submission Form -->
+        <!-- Add this after line 246 in restaurant_details.html, before </main> -->
 
-    <script id="restaurant-data" type="application/json">
+        <!-- User Review Submission Section -->
+        <section class="review-submission-section">
+            <h2><i class="fas fa-pen"></i> Write a Review</h2>
+
+            <div id="reviewLoginPrompt" class="login-prompt" style="display: none;">
+                <p><i class="fas fa-info-circle"></i> Please <a href="/login">login</a> to submit a review</p>
+            </div>
+
+            <form id="reviewSubmissionForm" class="review-form">
+                <!-- Star Rating Input -->
+                <div class="form-group">
+                    <label>Your Rating: <span class="required">*</span></label>
+                    <div class="star-rating-input">
+                        <i class="far fa-star" data-rating="1"></i>
+                        <i class="far fa-star" data-rating="2"></i>
+                        <i class="far fa-star" data-rating="3"></i>
+                        <i class="far fa-star" data-rating="4"></i>
+                        <i class="far fa-star" data-rating="5"></i>
+                    </div>
+                    <input type="hidden" id="ratingValue" name="rating" required>
+                    <span class="rating-text"></span>
+                </div>
+
+                <!-- Review Text -->
+                <div class="form-group">
+                    <label for="reviewText">Your Review: <span class="required">*</span></label>
+                    <textarea id="reviewText" name="review_text" rows="5"
+                        placeholder="Share your experience... (minimum 20 characters)" required minlength="20"
+                        maxlength="1000"></textarea>
+                    <div class="char-count-container">
+                        <span class="char-count">0/1000</span>
+                        <span class="char-min" style="display: none; color: #e74c3c;">Minimum 20 characters
+                            required</span>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="submit-review-btn" disabled>
+                    <i class="fas fa-paper-plane"></i> Submit Review
+                </button>
+            </form>
+
+            <div id="reviewSubmissionMessage" class="submission-message">
+                </d </main>
+
+                <script id="restaurant-data" type="application/json">
     {
         "latitude": {{ restaurant.get('Latitude') or (gemini_details.get('latitude') if gemini_details else 'null') }},
         "longitude": {{ restaurant.get('Longitude') or (gemini_details.get('longitude') if gemini_details else 'null') }},
         "name": "{{ restaurant.get('Restaurant Name') or restaurant.get('name') }}"
     }
     </script>
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="{{ url_for('static', filename='js/details.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/ui-utils.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/review-analysis.js') }}"></script>
-    <script>
-        // Initialize review analysis - use restaurant ID or name
-        document.addEventListener('DOMContentLoaded', function() {
-            const restaurantId = '{{ restaurant.get("Restaurant ID") or restaurant.get("id") or (gemini_details.get("place_id") if gemini_details else "") or restaurant.get("Restaurant Name", "").replace(" ", "_") }}';
-            const restaurantName = '{{ restaurant.get("Restaurant Name") or restaurant.get("name") or "Restaurant" }}';
-            const city = '{{ restaurant.get("City") or restaurant.get("city") or "" }}';
-            
-            if (restaurantId && restaurantName) {
-                reviewAnalysis.init(restaurantId, restaurantName, city);
-            }
-        });
-    </script>
+                <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+                <script src="{{ url_for('static', filename='js/details.js') }}"></script>
+                <script src="{{ url_for('static', filename='js/ui-utils.js') }}"></script>
+                <script src="{{ url_for('static', filename='js/review-analysis.js') }}"></script>
+                <script src="{{ url_for('static', filename='js/review-submission.js') }}"></script>
+                <script>
+                    // Initialize review analysis - use restaurant ID or name
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const restaurantId = '{{ restaurant.get("Restaurant ID") or restaurant.get("id") or (gemini_details.get("place_id") if gemini_details else "") or restaurant.get("Restaurant Name", "").replace(" ", "_") }}';
+                        const restaurantName = '{{ restaurant.get("Restaurant Name") or restaurant.get("name") or "Restaurant" }}';
+                        const city = '{{ restaurant.get("City") or restaurant.get("city") or "" }}';
+
+                        if (restaurantId && restaurantName) {
+                            reviewAnalysis.init(restaurantId, restaurantName, city);
+                        }
+                    });
+                </script>
 </body>
 
 </html>

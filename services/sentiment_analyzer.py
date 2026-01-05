@@ -1,8 +1,9 @@
 """
 Sentiment Analyzer Service
-Analyzes restaurant reviews using Gemini API for sentiment classification and insights
+Analyzes restaurant reviews using LOCAL AI model (HuggingFace transformers)
+No API costs, works offline!
 """
-from gemini_api import gemini_search
+from .local_sentiment_model import local_sentiment_analyzer
 import json
 import re
 
@@ -29,93 +30,13 @@ class SentimentAnalyzer:
         if not review_texts:
             return self._empty_analysis()
         
-        # Analyze using Gemini
+        # Analyze using LOCAL AI model
         try:
-            analysis = self._analyze_with_gemini(review_texts, reviews)
+            analysis = local_sentiment_analyzer.analyze_reviews(reviews)
             return analysis
         except Exception as e:
-            print(f"Error in sentiment analysis: {str(e)}")
+            print(f"Error in local sentiment analysis: {str(e)}")
             return self._fallback_analysis(reviews)
-    
-    def _analyze_with_gemini(self, review_texts, reviews):
-        """Use Gemini API for comprehensive analysis"""
-        
-        # Check if Gemini is available
-        if not gemini_search.is_available():
-            print("Gemini not available, using fallback analysis")
-            return self._fallback_analysis(reviews)
-        
-        # Prepare prompt
-        prompt = self._create_analysis_prompt(review_texts)
-        
-        # Call Gemini
-        response = gemini_search.model.generate_content(prompt)
-        
-        # Parse JSON response
-        try:
-            # Extract JSON from response
-            response_text = response.text
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-            
-            if json_match:
-                analysis_data = json.loads(json_match.group())
-            else:
-                # Fallback if JSON not found
-                return self._fallback_analysis(reviews)
-            
-            # Add metadata
-            analysis_data['review_count'] = len(reviews)
-            analysis_data['review_source_used'] = 'Google Places API'
-            analysis_data['analyzed_at'] = None  # Will be set by caller
-            
-            return analysis_data
-            
-        except json.JSONDecodeError as e:
-            print(f"Error parsing Gemini response: {str(e)}")
-            return self._fallback_analysis(reviews)
-    
-    def _create_analysis_prompt(self, review_texts):
-        """Create comprehensive analysis prompt for Gemini"""
-        
-        # Combine reviews for context
-        combined_reviews = "\n\n".join([f"Review {i+1}: {text}" for i, text in enumerate(review_texts[:20])])  # Limit to 20 reviews
-        
-        prompt = f"""Analyze these restaurant reviews and provide comprehensive insights in JSON format.
-
-Reviews:
-{combined_reviews}
-
-Provide analysis in this exact JSON format:
-{{
-  "overall_sentiment": "positive/neutral/negative",
-  "sentiment_percentages": {{
-    "positive": 0,
-    "neutral": 0,
-    "negative": 0
-  }},
-  "top_topics": ["topic1", "topic2", "topic3"],
-  "positive_highlights": ["highlight1", "highlight2", "highlight3"],
-  "negative_highlights": ["complaint1", "complaint2"],
-  "best_items": ["dish1", "dish2", "dish3"],
-  "common_complaints": ["issue1", "issue2"],
-  "ai_summary": "2-3 sentence summary of overall customer experience",
-  "ai_recommendations": "Personalized suggestions for what to try or when to visit"
-}}
-
-Guidelines:
-- overall_sentiment: Classify based on majority sentiment
-- sentiment_percentages: Estimate percentage of positive/neutral/negative reviews (must sum to 100)
-- top_topics: Main themes discussed (food quality, service, ambience, price, cleanliness)
-- positive_highlights: Best aspects mentioned by customers (max 5)
-- negative_highlights: Common complaints (max 5)
-- best_items: Specific dishes or menu items highly praised (max 5)
-- common_complaints: Recurring issues customers mention (max 5)
-- ai_summary: Brief, engaging summary of the dining experience
-- ai_recommendations: Helpful suggestions for potential diners
-
-Return ONLY the JSON, no additional text."""
-
-        return prompt
     
     def _fallback_analysis(self, reviews):
         """Simple keyword-based analysis as fallback"""
@@ -170,24 +91,9 @@ Return ONLY the JSON, no additional text."""
     def analyze_single_review(self, review_text):
         """Analyze a single review for sentiment"""
         
-        prompt = f"""Analyze this restaurant review and classify its sentiment.
-
-Review: "{review_text}"
-
-Return JSON:
-{{
-  "sentiment": "positive/neutral/negative",
-  "confidence": 0.0-1.0,
-  "topics": ["topic1", "topic2"],
-  "mentioned_items": ["item1", "item2"]
-}}"""
-
         try:
-            response = gemini_search.model.generate_content(prompt)
-            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
-            
-            if json_match:
-                return json.loads(json_match.group())
+            result = local_sentiment_analyzer.analyze_single_review(review_text)
+            return result
             
         except Exception as e:
             print(f"Error analyzing single review: {str(e)}")

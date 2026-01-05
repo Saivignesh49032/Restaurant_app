@@ -7,15 +7,17 @@ class ReviewAnalysis {
     constructor() {
         this.currentPlaceId = null;
         this.currentRestaurantName = null;
+        this.currentCity = null;
         this.analysisData = null;
     }
 
     /**
      * Initialize review analysis for a restaurant
      */
-    async init(placeId, restaurantName) {
+    async init(placeId, restaurantName, city) {
         this.currentPlaceId = placeId;
         this.currentRestaurantName = restaurantName;
+        this.currentCity = city;
 
         // Show loading state
         this.showLoading();
@@ -41,6 +43,7 @@ class ReviewAnalysis {
                 body: JSON.stringify({
                     place_id: this.currentPlaceId,
                     restaurant_name: this.currentRestaurantName,
+                    city: this.currentCity,
                     force_refresh: false
                 })
             });
@@ -62,6 +65,8 @@ class ReviewAnalysis {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     place_id: this.currentPlaceId,
+                    restaurant_name: this.currentRestaurantName,
+                    city: this.currentCity,
                     use_cache: true
                 })
             });
@@ -301,7 +306,7 @@ class ReviewAnalysis {
             <div class="ai-card summary-card">
                 <h4><i class="fas fa-robot"></i> AI Summary</h4>
                 <p class="ai-text">${summary}</p>
-                <span class="ai-badge">Powered by Gemini AI</span>
+                <span class="ai-badge">Powered by Local AI (HuggingFace)</span>
             </div>
         `;
     }

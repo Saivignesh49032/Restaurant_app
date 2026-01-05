@@ -88,6 +88,14 @@ from api import review_bp
 app.register_blueprint(auth_bp)
 app.register_blueprint(review_bp)
 
+# Register enhanced ML analytics blueprint
+try:
+    from api.enhanced_review_routes import enhanced_review_bp
+    app.register_blueprint(enhanced_review_bp)
+    print("✅ Enhanced ML analytics routes registered")
+except ImportError as e:
+    print(f"⚠️ Enhanced ML analytics not available: {e}")
+
 # Create database tables
 with app.app_context():
     db.create_all()
@@ -235,43 +243,86 @@ def _resolve_budget_floor(profile: dict) -> int:
     return int(profile.get('budget') or profile.get('budget_band_min') or 2)
 
 # --- Load All Assets ONCE on Startup ---
-print("Loading application assets...")
-ASSETS_DIR = 'assets'
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Load dataset
+print("\n" + "="*60)
+print("🚀 LOADING APPLICATION ASSETS")
+print("="*60)
+
+ASSETS_DIR = 'assets'
+start_time = time.time()
+
+# Helper function to load with progress
+def load_with_progress(load_func, path, name):
+    """Load a file and print progress."""
+    item_start = time.time()
+    print(f"📦 Loading {name}...", end=" ", flush=True)
+    try:
+        result = load_func(path)
+        elapsed = time.time() - item_start
+        print(f"✅ ({elapsed:.2f}s)")
+        return result
+    except Exception as e:
+        print(f"❌ FAILED: {e}")
+        raise
+
+# Load dataset with optimized dtypes
+print("\n📊 DATASET LOADING")
+print("-" * 60)
 DATASET_PATH = os.path.join(ASSETS_DIR, 'Dataset .csv')
-original_restaurant_data = pd.read_csv(DATASET_PATH)
+original_restaurant_data = load_with_progress(
+    lambda p: pd.read_csv(p, low_memory=False),
+    DATASET_PATH,
+    "Restaurant Dataset"
+)
 
 # Load CIT1 Rating Model and Preprocessors
+print("\n🎯 RATING PREDICTION MODELS")
+print("-" * 60)
 RATING_MODEL_PATH = os.path.join(ASSETS_DIR, 'rating_model.joblib')
-rating_model = joblib.load(RATING_MODEL_PATH)
+rating_model = load_with_progress(joblib.load, RATING_MODEL_PATH, "Rating Model")
 
 RATING_PREPROCESSOR_PATH = os.path.join(ASSETS_DIR, 'rating_preprocessor.joblib')
-rating_preprocessor = joblib.load(RATING_PREPROCESSOR_PATH)
+rating_preprocessor = load_with_progress(joblib.load, RATING_PREPROCESSOR_PATH, "Rating Preprocessor")
 
 TARGET_SCALER_PATH = os.path.join(ASSETS_DIR, 'target_scaler.joblib')
-target_scaler = joblib.load(TARGET_SCALER_PATH)
+target_scaler = load_with_progress(joblib.load, TARGET_SCALER_PATH, "Target Scaler")
 
 # Load CIT2 Recommender Assets
+print("\n🎨 RECOMMENDATION SYSTEM MODELS")
+print("-" * 60)
 PREPROCESSOR_PATH = os.path.join(ASSETS_DIR, 'recommender_preprocessor.joblib')
 MLB_CLASSES_PATH = os.path.join(ASSETS_DIR, 'mlb_classes.joblib')
 VECTORS_PATH = os.path.join(ASSETS_DIR, 'processed_restaurant_vectors.csv')
 
-recommender_preprocessor = joblib.load(PREPROCESSOR_PATH)
-mlb_classes = joblib.load(MLB_CLASSES_PATH)
-processed_restaurants_df = pd.read_csv(VECTORS_PATH, index_col=0)
+recommender_preprocessor = load_with_progress(joblib.load, PREPROCESSOR_PATH, "Recommender Preprocessor")
+mlb_classes = load_with_progress(joblib.load, MLB_CLASSES_PATH, "Multi-Label Binarizer Classes")
+processed_restaurants_df = load_with_progress(
+    lambda p: pd.read_csv(p, index_col=0, low_memory=False),
+    VECTORS_PATH,
+    "Processed Restaurant Vectors"
+)
 all_features_for_recommender_pipeline = processed_restaurants_df.columns.tolist()
 
 # Cache numpy matrix for similarity computations to speed up recommendations
+print("\n⚡ OPTIMIZING DATA STRUCTURES")
+print("-" * 60)
+print("🔧 Creating numpy matrix cache...", end=" ", flush=True)
+matrix_start = time.time()
 try:
     processed_restaurants_matrix = processed_restaurants_df.values
 except Exception:
     processed_restaurants_matrix = np.asarray(processed_restaurants_df)
+print(f"✅ ({time.time() - matrix_start:.2f}s)")
 
 # Price range mapping
 price_range_map = {1: 'Cheap', 2: 'Moderate', 3: 'Expensive', 4: 'Very Expensive'}
 
-print("Assets loaded successfully.")
+total_time = time.time() - start_time
+print("\n" + "="*60)
+print(f"✨ ALL ASSETS LOADED SUCCESSFULLY in {total_time:.2f}s")
+print("="*60 + "\n")
 
 # --- Helper Functions (Copied from CIT2) ---
 # We must copy these functions from your notebook so the app can use them.
@@ -1265,11 +1316,18 @@ def api_predict_rating():
 # Replace the existing @app.route('/api/gemini/search', methods=['POST']) function with this
 
 @app.route('/api/gemini/search', methods=['POST'])
-@login_required
 def api_gemini_search():
     """API endpoint for Gemini-powered restaurant search with database caching."""
     user_id = _ensure_user_id()
+    
+    print("\n" + "="*80)
+    print("🔍 GEMINI SEARCH REQUEST STARTED")
+    print("="*80)
+    print(f"GEMINI_ENABLED: {GEMINI_ENABLED}")
+    print(f"is_gemini_available(): {is_gemini_available() if GEMINI_ENABLED else 'N/A'}")
+    
     if not GEMINI_ENABLED or not is_gemini_available():
+        print("❌ Gemini API not available, attempting Google Places fallback...")
         # Fallback to Google Places if Gemini not available
         if GOOGLE_PLACES_ENABLED and is_google_places_available():
             try:
@@ -1308,6 +1366,8 @@ def api_gemini_search():
     
     try:
         data = request.json
+        print(f"📥 Request data: {data}")
+        
         city = normalize_city_name(data.get('city', ''))
         cuisines = data.get('cuisines', '').split(',') if data.get('cuisines') else None
         cuisines = [c.strip() for c in cuisines if c.strip()] if cuisines else None
@@ -1317,16 +1377,22 @@ def api_gemini_search():
         occasion = data.get('occasion')
         context = build_contextual_preferences(city, mood=mood, occasion=occasion)
         
+        print(f"🏙️  City: {city}")
+        print(f"🍽️  Cuisines: {cuisines}")
+        print(f"💰 Price Range: {price_range}")
+        print(f"🚗 Visit Type: {visit_type}")
+        
         if not city:
+            print("❌ Error: City is required")
             return jsonify({"error": "City is required"}), 400
         
         # STEP 1: Check database cache first
-        print(f"🔍 Checking cache for: {city}, cuisines: {cuisines}")
+        print(f"\n🔍 Checking cache for: {city}, cuisines: {cuisines}")
         cached_results = get_search_from_cache(city, cuisines, {'price_range': price_range, 'visit_type': visit_type})
         
         if cached_results:
             # Cache HIT - return saved results instantly
-            print(f"✅ Returning {len(cached_results)} cached results")
+            print(f"✅ Cache HIT! Returning {len(cached_results)} cached results")
             session['recommendations'] = cached_results
             session['search_type'] = 'gemini-cached'
             add_history_event(user_id, {
@@ -1336,10 +1402,11 @@ def api_gemini_search():
                 "context": context,
                 "mode": "gemini-cached"
             })
+            print("="*80 + "\n")
             return jsonify(cached_results)
         
         # STEP 2: Cache MISS - call Gemini API
-        print(f"⚠️ Cache miss - calling Gemini API for {city}")
+        print(f"⚠️  Cache MISS - calling Gemini API for {city}")
         results = search_restaurants_gemini(
             city=city,
             cuisines=cuisines,
@@ -1348,9 +1415,13 @@ def api_gemini_search():
             max_results=10
         )
         
+        print(f"📊 Gemini API returned {len(results) if results else 0} results")
+        if results:
+            print(f"First result sample: {results[0].get('name', 'N/A')}")
+        
         # If Gemini returns no results, try Google Places
         if not results and GOOGLE_PLACES_ENABLED and is_google_places_available():
-            print("Gemini returned no results, trying Google Places...")
+            print("⚠️  Gemini returned no results, trying Google Places...")
             results = search_restaurants_google(
                 city=city,
                 cuisines=cuisines,
@@ -1358,6 +1429,7 @@ def api_gemini_search():
                 max_results=10
             )
             if results:
+                print(f"✅ Google Places returned {len(results)} results")
                 session['search_type'] = 'google'
         
         # STEP 3: Save results to database
@@ -1396,11 +1468,18 @@ def api_gemini_search():
                 "context": context,
                 "mode": "gemini"
             })
+            print(f"✅ Successfully returning {len(results)} results")
+        else:
+            print("❌ No results found from any source")
         
+        print("="*80 + "\n")
         return jsonify(results)
         
     except Exception as e:
-        print(f"Error in Gemini search: {e}")
+        print(f"❌ Error in Gemini search: {e}")
+        import traceback
+        traceback.print_exc()
+        print("="*80 + "\n")
         return jsonify({"error": str(e)}), 500
 
 
@@ -1627,18 +1706,51 @@ def api_recommend_hybrid():
 # Flexible route for restaurant details (handles both int and string IDs)
 @app.route('/restaurant/<path:restaurant_id>')
 def restaurant_details_any(restaurant_id):
-    """Handle restaurant details for any ID type."""
+    """Handle restaurant details for any ID type - OPTIMIZED."""
     # Try to convert to int
     try:
         numeric_id = int(restaurant_id)
         return restaurant_details(numeric_id)
     except (ValueError, TypeError):
-        # String ID - likely from Gemini, extract name and try to get details
+        # String ID - likely from Gemini
         import urllib.parse
+        
         # Decode and convert underscores back to spaces
         restaurant_name = urllib.parse.unquote(str(restaurant_id)).replace('_', ' ')
         
-        # Try to get details from Gemini
+        # OPTIMIZATION: Check database first for cached Gemini data
+        print(f"🔍 Looking for {restaurant_id} in database cache...")
+        cached_restaurant = GeminiRestaurant.query.filter_by(restaurant_id=restaurant_id).first()
+        
+        if cached_restaurant:
+            print(f"✅ Found cached data for {cached_restaurant.name}")
+            restaurant_data = cached_restaurant.to_dict()
+            
+            # Convert to expected format
+            gemini_details = {
+                'name': cached_restaurant.name,
+                'address': cached_restaurant.address,
+                'rating': cached_restaurant.rating,
+                'cuisines': cached_restaurant.cuisines.split(',') if cached_restaurant.cuisines else [],
+                'cost_for_two': cached_restaurant.cost_for_two,
+                'latitude': cached_restaurant.latitude,
+                'longitude': cached_restaurant.longitude,
+                'phone': cached_restaurant.phone,
+                'hours': cached_restaurant.hours,
+                'features': json.loads(cached_restaurant.features) if cached_restaurant.features else [],
+                'description': cached_restaurant.description,
+                'place_id': cached_restaurant.place_id
+            }
+            
+            return render_template(
+                'restaurant_details.html',
+                restaurant=restaurant_data,
+                gemini_details=gemini_details,
+                gemini_available=True
+            )
+        
+        # Not in cache - try Gemini API (only if needed)
+        print(f"⚠️ Not in cache, calling Gemini API for {restaurant_name}")
         if GEMINI_ENABLED and is_gemini_available():
             try:
                 # Extract city from the name if it's in parentheses
@@ -1652,6 +1764,10 @@ def restaurant_details_any(restaurant_id):
                 gemini_details = get_restaurant_details_gemini(restaurant_name, city)
                 
                 if gemini_details:
+                    # Save to database for future use
+                    gemini_details['id'] = restaurant_id
+                    save_gemini_restaurant(gemini_details)
+                    
                     # Create restaurant data from Gemini response
                     restaurant_data = {
                         'Restaurant Name': gemini_details.get('name', restaurant_name),
@@ -1742,7 +1858,8 @@ def restaurant_details(restaurant_id):
 # Import ML analytics module
 try:
     from ml_analytics import RatingPredictor, SentimentAnalyzer, RecommendationEngine
-    from models import RestaurantRatingHistory, RestaurantPrediction, AIRecommendation, ReviewSentiment
+    # ML Analytics models not yet implemented - commenting out to avoid errors
+    # from models import RestaurantRatingHistory, RestaurantPrediction, AIRecommendation, ReviewSentiment
     ML_ANALYTICS_ENABLED = True
 except ImportError as e:
     print(f"⚠️ ML Analytics not fully available: {e}")

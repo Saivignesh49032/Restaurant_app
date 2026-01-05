@@ -17,6 +17,8 @@ venv.bak/
 # IDEs and Editors
 .idea/
 .vscode/
+.zencoder/
+.zenflow/
 *.swp
 *.swo
 *~
