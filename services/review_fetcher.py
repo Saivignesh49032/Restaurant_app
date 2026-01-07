@@ -53,19 +53,26 @@ class ReviewFetcher:
     
     def fetch_reviews(self, restaurant_id, restaurant_name=None, city=None, force_refresh=False):
         """
-        Fetch reviews - OPTIMIZED for speed
+        Fetch reviews with automatic cache invalidation
         
         Priority:
-        1. Database (user-submitted)
-        2. Sample reviews (instant fallback)
+        1. Check if restaurant data changed (auto-invalidate if yes)
+        2. Database (user-submitted)
+        3. Sample reviews (instant fallback)
         
         Web scraping disabled to avoid 4-8 second delays
         """
+        # Check if restaurant data has been updated since reviews were generated
+        if self._should_invalidate_cache(restaurant_id):
+            print(f"🔄 Restaurant data updated - regenerating reviews for {restaurant_name or restaurant_id}")
+            self._clear_restaurant_cache(restaurant_id)
+            force_refresh = True
+        
         # Get database reviews
         db_reviews = self._fetch_from_database(restaurant_id)
         
         # If we have reviews, return them immediately
-        if len(db_reviews) > 0:
+        if len(db_reviews) > 0 and not force_refresh:
             return {
                 'reviews': db_reviews,
                 'source': 'database',
@@ -79,10 +86,10 @@ class ReviewFetcher:
         db_reviews = self._fetch_from_database(restaurant_id)
         
         return {
-            'reviews': db_reviews[:20],  # Limit to 20 reviews
+            'reviews': db_reviews[:100],  # Limit to 100 reviews for comprehensive analysis
             'source': 'samples',
             'cached_at': datetime.utcnow(),
-            'count': len(db_reviews[:20]),
+            'count': len(db_reviews[:100]),
             'sources_used': ['samples']
         }
 
@@ -428,8 +435,8 @@ class ReviewFetcher:
         try:
             reviews_added = 0
             
-            # Generate 8-15 reviews with randomized distribution
-            num_reviews = random.randint(8, 15)
+            # Generate 50-100 reviews with randomized distribution
+            num_reviews = random.randint(50, 100)
             
             # Create weighted rating distribution (more realistic)
             # Most restaurants have mostly positive reviews with some mixed
@@ -500,3 +507,60 @@ class ReviewFetcher:
             'source': 'database',
             'review_count': len(reviews)
         }
+    
+    def _should_invalidate_cache(self, restaurant_id):
+        """
+        Check if cache should be invalidated due to restaurant data changes
+        Compares restaurant updated_at with review creation time
+        """
+        try:
+            from models import GeminiRestaurant, Review
+            
+            # Get restaurant record
+            restaurant = GeminiRestaurant.query.filter_by(restaurant_id=str(restaurant_id)).first()
+            if not restaurant:
+                return False  # No restaurant record, can't check
+            
+            # Get most recent review for this restaurant
+            latest_review = Review.query.filter_by(
+                restaurant_id=str(restaurant_id)
+            ).order_by(Review.created_at.desc()).first()
+            
+            if not latest_review:
+                return False  # No reviews yet, nothing to invalidate
+            
+            # Compare timestamps - if restaurant was updated after reviews were created, invalidate
+            if restaurant.updated_at and restaurant.updated_at > latest_review.created_at:
+                return True  # Restaurant updated after reviews were generated
+            
+            return False
+            
+        except Exception as e:
+            print(f"Error checking cache invalidation: {e}")
+            return False
+    
+    def _clear_restaurant_cache(self, restaurant_id):
+        """
+        Clear reviews and analysis cache for a specific restaurant
+        Called when restaurant data is updated
+        """
+        try:
+            from models import Review, ReviewAnalysisCache
+            
+            # Count before deletion
+            review_count = Review.query.filter_by(restaurant_id=str(restaurant_id)).count()
+            
+            # Delete reviews for this restaurant
+            Review.query.filter_by(restaurant_id=str(restaurant_id)).delete()
+            
+            # Delete analysis cache for this restaurant
+            ReviewAnalysisCache.query.filter_by(place_id=str(restaurant_id)).delete()
+            
+            db.session.commit()
+            print(f"✅ Cleared {review_count} cached reviews for restaurant {restaurant_id}")
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Error clearing restaurant cache: {e}")
+            return False

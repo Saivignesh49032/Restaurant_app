@@ -1599,6 +1599,31 @@
         "mode": "gemini-cached",
         "id": "3d1bfe4d-38cf-41e4-82fc-f63d001cbb72",
         "timestamp": "2026-01-05T06:57:34.541304"
+      },
+      {
+        "type": "search",
+        "city": "Bangalore",
+        "results": 10,
+        "context": {
+          "time": {
+            "segment": "lunch",
+            "weekday": "Monday",
+            "hour": 12
+          },
+          "weather": {
+            "summary": "Sunny",
+            "temp_c": 23.0,
+            "is_rainy": false,
+            "is_hot": false
+          },
+          "mood": "",
+          "occasion": "",
+          "mood_filters": {},
+          "occasion_filters": {}
+        },
+        "mode": "gemini-cached",
+        "id": "e2dc6241-5207-49e9-bc69-d5cd9c118c47",
+        "timestamp": "2026-01-05T07:16:28.531663"
       }
     ],
     "interactions": [

@@ -145,7 +145,10 @@ class LocalSentimentAnalyzer:
                 'review_count': total,
                 'review_source_used': 'Multiple Sources',
                 'analyzed_at': None,
-                'model_used': 'Local AI (HuggingFace Transformers)'
+                'model_used': 'Local AI (HuggingFace Transformers)',
+                'confidence_score': round((positive_count / total) * 100) if total > 0 else 0,
+                'review_quality': 'high' if total >= 50 else 'medium' if total >= 20 else 'low',
+                'sentiment_strength': 'strong' if abs(positive_count - negative_count) > total * 0.5 else 'moderate'
             }
             
         except Exception as e:
@@ -358,26 +361,101 @@ class LocalSentimentAnalyzer:
         return complaints[:5]
     
     def _generate_summary(self, total: int, sentiment: str, positive: int, negative: int) -> str:
-        """Generate AI-style summary of reviews"""
+        """Generate comprehensive AI-style summary with detailed insights"""
+        
+        # Calculate percentages
+        pos_pct = round((positive / total) * 100) if total > 0 else 0
+        neg_pct = round((negative / total) * 100) if total > 0 else 0
+        neutral = total - positive - negative
+        neu_pct = round((neutral / total) * 100) if total > 0 else 0
+        
+        # Build detailed summary with multiple sentences
+        summary_parts = []
+        
+        # Opening statement with comprehensive context
         if sentiment == 'positive':
-            return f"Based on {total} reviews, customers have an overwhelmingly positive experience. {positive} out of {total} reviewers highly recommend this restaurant for its quality and service."
+            summary_parts.append(f"Based on comprehensive analysis of {total} customer reviews, this restaurant demonstrates exceptional performance with {pos_pct}% positive feedback.")
+            
+            if pos_pct >= 80:
+                summary_parts.append(f"{positive} out of {total} customers highly recommend this establishment, consistently praising its outstanding quality, service, and overall dining experience.")
+            else:
+                summary_parts.append(f"{positive} out of {total} reviewers recommend this restaurant for its quality and service.")
+            
+            if neu_pct > 10:
+                summary_parts.append(f"While {neu_pct}% had neutral experiences, the overwhelming majority report satisfaction.")
+                
         elif sentiment == 'negative':
-            return f"Based on {total} reviews, customers report mixed to negative experiences. {negative} out of {total} reviewers expressed concerns about various aspects of the restaurant."
+            summary_parts.append(f"Analysis of {total} reviews reveals concerning patterns, with {neg_pct}% negative feedback indicating significant room for improvement.")
+            summary_parts.append(f"{negative} out of {total} customers reported dissatisfaction with various aspects including food quality, service, or value.")
+            
+            if pos_pct > 20:
+                summary_parts.append(f"However, {pos_pct}% of customers did have positive experiences, suggesting inconsistent quality.")
         else:
-            return f"Based on {total} reviews, customers have varied experiences. While {positive} reviewers had positive feedback, {negative} noted areas for improvement."
+            summary_parts.append(f"Based on {total} reviews, customer experiences show mixed results with {pos_pct}% positive, {neu_pct}% neutral, and {neg_pct}% negative feedback.")
+            summary_parts.append(f"While {positive} customers enjoyed their visit, {negative} noted areas needing improvement, indicating variable service quality.")
+        
+        return ' '.join(summary_parts)
     
     def _generate_recommendations(self, best_items: List[str], positives: List[str], negatives: List[str]) -> str:
-        """Generate personalized recommendations"""
+        """Generate detailed, actionable recommendations with context"""
+        
         recommendations = []
         
+        # Dish recommendations with enthusiastic context
         if best_items:
-            recommendations.append(f"Try their {', '.join(best_items[:3])} which customers rave about.")
+            if len(best_items) >= 3:
+                dishes_str = ', '.join(best_items[:3])
+                recommendations.append(f"🍽️ Must-Try Dishes: {dishes_str} - consistently praised by customers for exceptional taste, quality, and authentic flavors.")
+            elif len(best_items) == 2:
+                dishes_str = ' and '.join(best_items[:2])
+                recommendations.append(f"🍽️ Signature Items: Don't miss their {dishes_str} which receive rave reviews from diners.")
+            else:
+                recommendations.append(f"🍽️ Featured Dish: {best_items[0]} is highly recommended by satisfied customers.")
         
-        if negatives and 'slow' in ' '.join(negatives).lower():
-            recommendations.append("Visit during off-peak hours for faster service.")
+        # Timing and service recommendations based on negative feedback
+        has_wait_issues = any('slow' in neg.lower() or 'wait' in neg.lower() or 'delayed' in neg.lower() for neg in negatives)
+        has_crowd_issues = any('crowded' in neg.lower() or 'busy' in neg.lower() or 'rush' in neg.lower() for neg in negatives)
         
+        if has_wait_issues or has_crowd_issues:
+            recommendations.append(f"⏰ Pro Tip: Visit during off-peak hours (weekday afternoons 2-5 PM or after 9 PM) for faster service, better attention from staff, and a more relaxed dining experience.")
+        elif len(positives) > 5:  # Popular restaurant
+            recommendations.append(f"⏰ Booking Recommended: This popular restaurant receives high praise - consider making reservations for weekend dinners or special occasions to avoid wait times.")
+        
+        # Service quality insights
+        has_good_service = any('service' in pos.lower() and ('good' in pos.lower() or 'great' in pos.lower() or 'excellent' in pos.lower() or 'friendly' in pos.lower()) for pos in positives)
+        has_poor_service = any('service' in neg.lower() or 'staff' in neg.lower() or 'rude' in neg.lower() for neg in negatives)
+        
+        if has_good_service:
+            recommendations.append(f"👥 Excellent Service: Staff consistently receives high praise for professionalism, attentiveness, and creating a welcoming atmosphere.")
+        elif has_poor_service:
+            recommendations.append(f"👥 Service Note: Some customers mention service inconsistencies during peak hours - patience may be needed during busy periods.")
+        
+        # Value and pricing insights
+        has_good_value = any(('value' in pos.lower() or 'worth' in pos.lower() or 'reasonable' in pos.lower() or 'affordable' in pos.lower()) for pos in positives)
+        has_price_concerns = any('expensive' in neg.lower() or 'overpriced' in neg.lower() or 'costly' in neg.lower() for neg in negatives)
+        
+        if has_good_value:
+            recommendations.append(f"💰 Great Value: Customers consistently highlight excellent value for money with generous portions and fair pricing.")
+        elif has_price_concerns:
+            recommendations.append(f"💰 Pricing Note: Some find it on the pricier side - consider lunch specials or combo meals for better value.")
+        
+        # Ambiance and occasion recommendations
+        has_romantic_vibe = any('romantic' in pos.lower() or 'cozy' in pos.lower() or 'intimate' in pos.lower() or 'ambiance' in pos.lower() for pos in positives)
+        has_family_friendly = any('family' in pos.lower() or 'kids' in pos.lower() or 'children' in pos.lower() for pos in positives)
+        
+        if has_romantic_vibe:
+            recommendations.append(f"💑 Perfect For: Romantic dinners, date nights, and special celebrations with its intimate ambiance and quality service.")
+        elif has_family_friendly:
+            recommendations.append(f"👨‍👩‍👧‍👦 Family-Friendly: Ideal for family gatherings, group celebrations, and casual dining with loved ones.")
+        
+        # Food quality highlights
+        has_quality_praise = any('quality' in pos.lower() or 'fresh' in pos.lower() or 'authentic' in pos.lower() for pos in positives)
+        if has_quality_praise and not best_items:
+            recommendations.append(f"✨ Quality Ingredients: Diners appreciate the use of fresh, high-quality ingredients and authentic cooking methods.")
+        
+        # Fallback recommendation if nothing specific found
         if not recommendations:
-            recommendations.append("Check recent reviews for the latest customer experiences.")
+            recommendations.append("📋 Explore the Menu: Check recent reviews for the latest customer experiences, seasonal specials, and chef recommendations.")
         
         return ' '.join(recommendations)
     
